@@ -37,6 +37,7 @@
     "sizecheck": "npx vite-bundle-visualizer"
   },
   "dependencies": {
+    "@guolao/vue-monaco-editor": "^1.5.4",
     "@vueuse/core": "^10.11.1",
     "alova": "^3.0.8",
     "colord": "^2.9.3",

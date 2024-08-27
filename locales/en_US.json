@@ -9,6 +9,7 @@
     "inputPlaceholder": "please enter",
     "selectPlaceholder": "please choose",
     "operation": "Operation",
+    "update": "Update",
     "delete": "Delete",
     "success": "successful",
     "failed": "failed",
@@ -74,7 +75,8 @@
     "route": "Route",
     "user": "User",
     "createUser": "Create User",
-    "renameUser": "Rename User"
+    "renameUser": "Rename User",
+    "updateTime": "Update Time"
   },
   "http": {
     "400": "Syntax error in the request",
@@ -103,7 +105,8 @@
     "nodes": "Nodes",
     "apiKeys": "API Keys",
     "routes": "Routes",
-    "users": "Users"
+    "users": "Users",
+    "policy": "Policy"
   },
   "components": {
     "copyText": {

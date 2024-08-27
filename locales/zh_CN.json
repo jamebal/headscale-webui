@@ -9,6 +9,7 @@
     "inputPlaceholder": "请输入",
     "selectPlaceholder": "请选择",
     "operation": "操作",
+    "update": "更新",
     "delete": "删除",
     "success": "成功",
     "failed": "失败",
@@ -74,7 +75,8 @@
     "route": "路由",
     "user": "用户",
     "createUser": "创建用户",
-    "renameUser": "重命名用户"
+    "renameUser": "重命名用户",
+    "updateTime": "更新时间"
   },
   "http": {
     "400": "请求出现语法错误",
@@ -103,7 +105,8 @@
     "nodes": "节点管理",
     "apiKeys": "API Keys",
     "routes": "路由管理",
-    "users": "用户管理"
+    "users": "用户管理",
+    "policy": "策略"
   },
   "components": {
     "copyText": {

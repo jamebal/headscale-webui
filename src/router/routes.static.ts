@@ -39,4 +39,14 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     id: 2,
     pid: null,
   },
+  {
+    name: 'policy',
+    path: '/policy',
+    title: 'policy',
+    requiresAuth: true,
+    icon: 'carbon:vpn-policy',
+    componentPath: '/policy/index.vue',
+    id: 2,
+    pid: null,
+  },
 ]
