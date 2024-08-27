@@ -16,7 +16,8 @@
     "yes": "Yes",
     "no": "No",
     "enable": "Enable",
-    "disable": "Disable"
+    "disable": "Disable",
+    "rename": "Rename"
   },
   "app": {
     "loginOut": "Login out",
@@ -72,7 +73,8 @@
     "isPrimary": "Primary",
     "route": "Route",
     "user": "User",
-    "createUser": "Create User"
+    "createUser": "Create User",
+    "renameUser": "Rename User"
   },
   "http": {
     "400": "Syntax error in the request",

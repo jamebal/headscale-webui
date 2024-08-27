@@ -36,6 +36,7 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
+  formModal.value.name = ''
 })
 
 const rules = computed(() => {
@@ -52,7 +53,6 @@ const formRef = ref<FormInst | null>(null)
 
 function handleSubmit() {
   formRef.value?.validate(async (errors) => {
-    console.log(errors)
     if (errors)
       return
     isLoading.value = true

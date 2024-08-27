@@ -17,7 +17,7 @@ export function fetchUser(username: string) {
 }
 
 export function createUser(username: string) {
-  return request.Post<Service.ResponseResult<{ user: User }>>('/api/v1/user', { name: username})
+  return request.Post<Service.ResponseResult<{ user: User }>>('/api/v1/user', { name: username })
 }
 
 export function deleteUser(username: string) {

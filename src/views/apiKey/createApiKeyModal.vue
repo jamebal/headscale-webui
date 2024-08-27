@@ -28,6 +28,8 @@ const isLoading = ref(false)
 
 const apiKey = ref('')
 
+const timestamp = ref()
+
 function closeModal() {
   modalVisible.value = false
   apiKey.value = ''
@@ -39,9 +41,8 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
+  timestamp.value = new Date().getTime() + 1000 * 60 * 60 * 24 * 90
 })
-
-const timestamp = ref(new Date().getTime() + 1000 * 60 * 60 * 24 * 90)
 
 async function handleSubmit() {
   const timezoneOffset = new Date(timestamp.value).getTimezoneOffset() * 60000

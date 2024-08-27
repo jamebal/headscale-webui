@@ -9,6 +9,7 @@ import { fetchUserList } from '@/service'
 import { showDeleteUserDialog } from '@/views/user/deleteUserDialog'
 import NovaIcon from '@/components/common/NovaIcon.vue'
 import CreateUserModal from '@/views/user/createUserModal.vue'
+import RenameUserModal from '@/views/user/renameUserModal.vue'
 
 const { t } = useI18n()
 
@@ -25,6 +26,8 @@ watch(() => appStore.message, (newMessage) => {
 const dialog = useDialog()
 
 const createUserModalVisible = ref(false)
+const renameUserModalVisible = ref(false)
+const selectUsername = ref('')
 
 const columns = computed((): DataTableColumns<User> => [
   {
@@ -58,6 +61,16 @@ const columns = computed((): DataTableColumns<User> => [
           h(NButton, {
             secondary: true,
             size: 'small',
+            type: 'default',
+            onClick() {
+              handelRenameUser(rowData.name)
+            },
+          }, {
+            default: () => t('common.rename'),
+          }),
+          h(NButton, {
+            secondary: true,
+            size: 'small',
             type: 'error',
             onClick() {
               showDeleteUserDialog(dialog, t, rowData.name)
@@ -78,6 +91,11 @@ function renderUserList() {
     }
     userList.value = res.data.users
   })
+}
+
+function handelRenameUser(name: string) {
+  selectUsername.value = name
+  renameUserModalVisible.value = true
 }
 
 onMounted(() => {
@@ -103,6 +121,7 @@ onMounted(() => {
       :data="userList"
     />
     <CreateUserModal v-model:show="createUserModalVisible" />
+    <RenameUserModal v-model:show="renameUserModalVisible" :user="selectUsername" />
   </n-space>
 </template>
 

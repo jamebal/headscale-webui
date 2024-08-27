@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { FormInst } from 'naive-ui'
-import { type FormNode, registerNode } from '@/service/api/node'
-import type { User } from '@/service/api/user'
-import { useAppStore } from '@/store/app'
+import { renameUser } from '@/service'
+
+import { useAppStore } from '@/store'
 
 const props = defineProps(
   {
@@ -10,13 +10,9 @@ const props = defineProps(
       type: Boolean,
       default: false,
     },
-    userList: {
-      type: Array as PropType<User[]>,
-      default: () => [],
-    },
-    defaultUser: {
+    user: {
       type: String,
-      default: '',
+      required: true,
     },
   },
 )
@@ -27,9 +23,8 @@ const appStore = useAppStore()
 
 const { t } = useI18n()
 
-const formModal = ref<FormNode>({
-  user: null,
-  key: null,
+const formModal = ref<any>({
+  name: '',
 })
 
 const modalVisible = ref(props.show)
@@ -45,26 +40,15 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
-  formModal.value.user = props.defaultUser || null
-  formModal.value.key = null
+  formModal.value.name = props.user
 })
-
-const userOptions = computed(() => props.userList.map(user => ({
-  label: user.name,
-  value: user.name,
-})))
 
 const rules = computed(() => {
   return {
-    user: {
+    name: {
       required: true,
       trigger: 'blur',
-      message: t('app.registerNodeRuleUsername'),
-    },
-    key: {
-      required: true,
-      trigger: 'blur',
-      message: t('app.registerNodeRuleKey'),
+      message: t('common.inputPlaceholder'),
     },
   }
 })
@@ -76,13 +60,13 @@ function handleSubmit() {
     if (errors)
       return
     isLoading.value = true
-    const result = await registerNode(formModal.value)
+    const result = await renameUser(props.user, formModal.value.name)
     if (!result || !result.isSuccess) {
       isLoading.value = false
       return
     }
-    window.$message.success(t('app.registerNodeSuccesses'))
-    appStore.sendMessage({ event: 'refreshNodeList', data: {} })
+    appStore.sendMessage({ event: 'refreshUserList', data: {} })
+    window.$message.success(`${t('app.createUser')} ${t('common.success')}`)
     isLoading.value = false
     closeModal()
   })
@@ -94,19 +78,16 @@ function handleSubmit() {
     v-model:show="modalVisible"
     :mask-closable="false"
     preset="card"
-    :title="t('app.registerNode')"
-    class="w-720px"
+    :title="t('app.createUser')"
+    class="w-520px"
     :segmented="{
       content: true,
       action: true,
     }"
   >
     <n-form ref="formRef" label-placement="left" :rules="rules" :model="formModal" label-align="left" :label-width="90">
-      <n-form-item :label="t('app.username')" path="user">
-        <n-select v-model:value="formModal.user" :options="userOptions" />
-      </n-form-item>
-      <n-form-item label="mkey" path="key">
-        <n-input v-model:value="formModal.key" placeholder="mkey:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+      <n-form-item path="name" :label="t('app.username')">
+        <n-input v-model:value="formModal.name" />
       </n-form-item>
     </n-form>
     <template #action>

@@ -16,7 +16,8 @@
     "yes": "是",
     "no": "否",
     "enable": "启用",
-    "disable": "禁用"
+    "disable": "禁用",
+    "rename": "重命名"
   },
   "app": {
     "loginOut": "退出登录",
@@ -72,7 +73,8 @@
     "isPrimary": "主路由",
     "route": "路由",
     "user": "用户",
-    "createUser": "创建用户"
+    "createUser": "创建用户",
+    "renameUser": "重命名用户"
   },
   "http": {
     "400": "请求出现语法错误",
