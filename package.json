@@ -1,0 +1,82 @@
+{
+  "name": "headscale-webui",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A Tailscale-compatible orchestration server web front-end for headscale",
+  "author": {
+    "name": "jmal",
+    "email": "jmal@jmalx.com",
+    "url": "https://github.com/jamebal"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/jamebal/headscale-webui",
+  "repository": {
+    "url": "https://github.com/jamebal/headscale-webui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jamebal/headscale-webui/issues"
+  },
+  "keywords": [
+    "Vue",
+    "Vue3",
+    "Headscale",
+    "Tailscale"
+  ],
+  "scripts": {
+    "dev": "vite --mode dev --port 9980",
+    "dev:test": "vite --mode test",
+    "dev:prod": "vite --mode prod",
+    "build": "vue-tsc --noEmit && vite build --mode prod",
+    "build:dev": "vue-tsc --noEmit && vite build --mode dev",
+    "build:test": "vue-tsc --noEmit && vite build --mode test",
+    "preview": "vite preview --port 9981",
+    "lint": "eslint . && vue-tsc --noEmit",
+    "lint:fix": "eslint . --fix",
+    "lint:check": "npx @eslint/config-inspector",
+    "sizecheck": "npx vite-bundle-visualizer"
+  },
+  "dependencies": {
+    "@vueuse/core": "^10.11.1",
+    "alova": "^3.0.8",
+    "colord": "^2.9.3",
+    "pinia": "^2.2.1",
+    "pinia-plugin-persistedstate": "^3.2.1",
+    "radash": "^12.1.0",
+    "vue": "^3.4.37",
+    "vue-i18n": "^9.13.1",
+    "vue-router": "^4.4.3"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^2.25.1",
+    "@iconify-json/icon-park-outline": "^1.1.16",
+    "@iconify/vue": "^4.1.2",
+    "@types/node": "^22.3.0",
+    "@vitejs/plugin-vue": "^5.1.2",
+    "@vitejs/plugin-vue-jsx": "^4.0.0",
+    "eslint": "^9.9.0",
+    "lint-staged": "^15.2.9",
+    "naive-ui": "^2.39.0",
+    "sass": "^1.77.8",
+    "simple-git-hooks": "^2.11.1",
+    "typescript": "^5.5.4",
+    "unocss": "^0.62.1",
+    "unplugin-auto-import": "^0.18.2",
+    "unplugin-icons": "^0.19.2",
+    "unplugin-vue-components": "^0.27.4",
+    "vite": "^5.4.0",
+    "vite-bundle-visualizer": "^1.2.1",
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-vue-devtools": "7.3.8",
+    "vue-tsc": "^2.0.29"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --fix"
+  },
+  "volta": {
+    "node": "20.12.2"
+  }
+}
