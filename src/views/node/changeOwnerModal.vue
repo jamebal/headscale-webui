@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {moveNode, type NodeData} from '@/service/api/node'
+import { type NodeData, moveNode } from '@/service/api/node'
 import type { User } from '@/service/api/user'
 import { useAppStore } from '@/store/app'
 
