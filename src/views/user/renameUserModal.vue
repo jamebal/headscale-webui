@@ -66,7 +66,7 @@ function handleSubmit() {
       return
     }
     appStore.sendMessage({ event: 'refreshUserList', data: {} })
-    window.$message.success(`${t('app.createUser')} ${t('common.success')}`)
+    window.$message.success(`${t('app.renameUser')} ${t('common.success')}`)
     isLoading.value = false
     closeModal()
   })
