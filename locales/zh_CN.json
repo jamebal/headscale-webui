@@ -92,9 +92,9 @@
     "apiKeys": "API Keys"
   },
   "components": {
-  "copyText": {
-    "tooltip": "复制",
-    "message": "复制成功"
+    "copyText": {
+      "tooltip": "复制",
+      "message": "复制成功"
+    }
   }
-}
 }

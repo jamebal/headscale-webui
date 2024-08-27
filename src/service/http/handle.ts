@@ -1,23 +1,21 @@
 import { ERROR_NO_TIP_STATUS, ERROR_STATUS } from './config'
 
-type ErrorStatus = keyof typeof ERROR_STATUS
-
 /**
  * @description: 处理请求成功，但返回后端服务器报错
- * @param {Response} response
  * @return {*}
+ * @param status
+ * @param result
  */
-export async function handleResponseError(response: Response) {
+export async function handleResponseError(status: number, result: any) {
   const error: Service.RequestError = {
     errorType: 'Response Error',
     code: 0,
     message: ERROR_STATUS.default,
     data: null,
   }
-  const apiResponse: { message: string } = await response.json()
-  const errorCode: ErrorStatus = response.status as ErrorStatus
+  const apiResponse: { message: string } = result
   const message = apiResponse.message || ERROR_STATUS.default
-  Object.assign(error, { code: errorCode, message })
+  Object.assign(error, { code: status, message })
 
   showError(error)
 
@@ -43,6 +41,5 @@ export function showError(error: Service.RequestError) {
   const code = Number(error.code)
   if (ERROR_NO_TIP_STATUS.includes(code))
     return
-
   window.$message.error(error.message)
 }

@@ -23,7 +23,7 @@ const NaiveProviderContent = defineComponent({
 <template>
   <n-loading-bar-provider>
     <n-dialog-provider>
-      <n-notification-provider>
+      <n-notification-provider placement="top" container-style="width: 720px">
         <n-message-provider>
           <slot />
           <NaiveProviderContent />

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 
-import type { MessageRenderMessage } from 'naive-ui'
-import { NAlert } from 'naive-ui'
+import { NButton } from 'naive-ui'
+import { useClipboard } from '@vueuse/core'
 import { useAppStore } from '@/store'
 import { createApiKey } from '@/service/api/apiKey'
 
@@ -21,34 +21,16 @@ const appStore = useAppStore()
 
 const { t } = useI18n()
 
-const { success } = useMessage()
-
-const renderMessage: MessageRenderMessage = (props) => {
-  const { type } = props
-  return h(
-    NAlert,
-    {
-      closable: props.closable,
-      onClose: props.onClose,
-      type: type === 'loading' ? 'default' : type,
-      title: `${t('app.createApiKey')} ${t('common.success')}`,
-      style: {
-        boxShadow: 'var(--n-box-shadow)',
-        maxWidth: 'calc(100vw - 32px)',
-        width: '520px',
-      },
-    },
-    {
-      default: () => props.content,
-    },
-  )
-}
+const { copy } = useClipboard()
 
 const modalVisible = ref(props.show)
 const isLoading = ref(false)
 
+const apiKey = ref('')
+
 function closeModal() {
   modalVisible.value = false
+  apiKey.value = ''
 }
 
 watch(modalVisible, (newVal) => {
@@ -72,13 +54,14 @@ async function handleSubmit() {
   }
   appStore.sendMessage({ event: 'refreshApiKeyList', data: {} })
 
-  success(result.data.apiKey, {
-    render: renderMessage,
-    closable: true,
-    duration: 0,
-  })
+  apiKey.value = result.data.apiKey
 
   isLoading.value = false
+}
+
+function copyApiKey() {
+  copy(apiKey.value)
+  window.$message.success(t('components.copyText.message'))
   closeModal()
 }
 
@@ -93,24 +76,33 @@ function dateDisabled(timestamp: number) {
     :mask-closable="false"
     preset="card"
     :title="t('app.createApiKey')"
-    class="w-360px"
+    class="w-590px"
     :segmented="{
       content: true,
       action: true,
     }"
+    @after-leave="closeModal"
   >
-    <n-form label-placement="left" label-align="left" :label-width="90">
-      <n-form-item :label="t('app.expiry')" path="expire">
-        <n-date-picker v-model:value="timestamp" :actions="null" type="date" :default-calendar-start-time="timestamp" :is-date-disabled="dateDisabled" />
-      </n-form-item>
-    </n-form>
+    <n-alert v-if="apiKey" :title="`${t('app.createApiKey')} ${t('common.success')}`" type="success" style="margin-bottom: 20px">
+      {{ apiKey }}
+    </n-alert>
+    <n-space justify="center">
+      <n-form label-placement="left" label-align="left" :label-width="90">
+        <n-form-item :label="t('app.expiry')" path="expire">
+          <n-date-picker v-model:value="timestamp" :actions="null" type="date" :default-calendar-start-time="timestamp" :is-date-disabled="dateDisabled" />
+        </n-form-item>
+      </n-form>
+    </n-space>
     <template #action>
       <n-space justify="center">
         <NButton @click="closeModal()">
           {{ t('common.cancel') }}
         </NButton>
-        <NButton type="primary" :loading="isLoading" :disabled="isLoading" @click="handleSubmit">
+        <NButton v-if="!apiKey" type="primary" :loading="isLoading" :disabled="isLoading" @click="handleSubmit">
           {{ t('common.confirm') }}
+        </NButton>
+        <NButton v-if="apiKey" @click="copyApiKey">
+          {{ t('components.copyText.tooltip') }}
         </NButton>
       </n-space>
     </template>

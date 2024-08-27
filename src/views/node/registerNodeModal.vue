@@ -27,7 +27,7 @@ const appStore = useAppStore()
 
 const { t } = useI18n()
 
-const formModel = ref<FormNode>({
+const formModal = ref<FormNode>({
   user: null,
   key: null,
 })
@@ -45,7 +45,7 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
-  formModel.value.user = props.defaultUser || null
+  formModal.value.user = props.defaultUser || null
 })
 
 const userOptions = computed(() => props.userList.map(user => ({
@@ -75,7 +75,7 @@ function handleSubmit() {
     if (errors)
       return
     isLoading.value = true
-    const result = await registerNode(formModel.value)
+    const result = await registerNode(formModal.value)
     if (!result || !result.isSuccess) {
       isLoading.value = false
       return
@@ -100,12 +100,12 @@ function handleSubmit() {
       action: true,
     }"
   >
-    <n-form ref="formRef" label-placement="left" :rules="rules" :model="formModel" label-align="left" :label-width="90">
+    <n-form ref="formRef" label-placement="left" :rules="rules" :model="formModal" label-align="left" :label-width="90">
       <n-form-item :label="t('app.username')" path="user">
-        <n-select v-model:value="formModel.user" :options="userOptions" />
+        <n-select v-model:value="formModal.user" :options="userOptions" />
       </n-form-item>
       <n-form-item label="mkey" path="key">
-        <n-input v-model:value="formModel.key" placeholder="mkey:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+        <n-input v-model:value="formModal.key" placeholder="mkey:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
       </n-form-item>
     </n-form>
     <template #action>

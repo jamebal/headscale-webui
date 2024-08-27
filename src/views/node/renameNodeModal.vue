@@ -23,7 +23,7 @@ const appStore = useAppStore()
 
 const { t } = useI18n()
 
-const formModel = ref<any>({
+const formModal = ref<any>({
   nodeId: null,
   newName: null,
 })
@@ -41,8 +41,8 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
-  formModel.value.newName = props.nodeData?.givenName
-  formModel.value.nodeId = props.nodeData?.id
+  formModal.value.newName = props.nodeData?.givenName
+  formModal.value.nodeId = props.nodeData?.id
 })
 
 const rules = computed(() => {
@@ -62,7 +62,7 @@ function handleSubmit() {
     if (errors)
       return
     isLoading.value = true
-    const result = await renameNode(formModel.value)
+    const result = await renameNode(formModal.value)
     if (!result || !result.isSuccess) {
       isLoading.value = false
       return
@@ -87,9 +87,9 @@ function handleSubmit() {
       action: true,
     }"
   >
-    <n-form ref="formRef" label-placement="left" :rules="rules" :model="formModel" label-align="left" :label-width="90">
+    <n-form ref="formRef" label-placement="left" :rules="rules" :model="formModal" label-align="left" :label-width="90">
       <n-form-item path="newName">
-        <n-input v-model:value="formModel.newName" />
+        <n-input v-model:value="formModal.newName" />
       </n-form-item>
     </n-form>
     <template #action>

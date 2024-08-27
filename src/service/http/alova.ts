@@ -83,18 +83,24 @@ export function createAlovaInstance(
           const apiData = await response.json()
           return handleServiceResult(apiData)
         }
+        const resultText = await readStreamAsText(response)
         if (status === 500) {
-          const res = await readStreamAsText(response)
-          if (res?.toLowerCase() === 'unauthorized') {
+          if (resultText?.toLowerCase() === 'unauthorized') {
             await toLogin()
           }
         }
-        // 接口请求失败
-        const errorResult = handleResponseError(response)
-        return handleServiceResult(errorResult, false)
+        try {
+          const result = JSON.parse(resultText)
+          const errorResult = handleResponseError(status, result)
+          return handleServiceResult(errorResult, false)
+        }
+        catch {
+          const errorResult = handleResponseError(status, { message: resultText })
+          return handleServiceResult(errorResult, false)
+        }
       },
       onError: (error) => {
-        handleResponseError(error)
+        handleResponseError(error.status, { message: 'Request failed' })
       },
       onComplete: async (_method) => {
         // 处理请求完成逻辑

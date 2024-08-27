@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { type ApiKeyData, fetchApiKeyList } from '@/service/api/apiKey'
 import { useAppStore } from '@/store'
 import NovaIcon from '@/components/common/NovaIcon.vue'
-import CreateApiKeyModel from '@/views/apiKey/createApiKeyModel.vue'
+import CreateApiKeyModel from '@/views/apiKey/createApiKeyModal.vue'
 import { showExpireApiKeyDialog } from '@/views/apiKey/expireApiKeyDialog'
 import { showDeleteApiKeyDialog } from '@/views/apiKey/deleteApiKeyDialog'
 import { local } from '@/utils'
@@ -25,7 +25,7 @@ watch(() => appStore.message, (newMessage) => {
   }
 })
 
-const createApiKeyModelVisible = ref(false)
+const createApiKeyModalVisible = ref(false)
 
 const columns = computed((): DataTableColumns<ApiKeyData> => [
   {
@@ -37,14 +37,13 @@ const columns = computed((): DataTableColumns<ApiKeyData> => [
     title: t('app.prefix'),
     key: 'prefix',
     render(rowData) {
-      // lwnXxhGYTQ.wS5QNkqRxqYyWsR5iv_DjYykN8wCf5OvQpJqVNWzf0c
       const serverUrl = local.get('accessToken')
       if (serverUrl?.startsWith(rowData.prefix)) {
         return h(NTag, {
           style: {
             marginRight: '6px',
           },
-          type: 'success',
+          type: 'info',
           bordered: true,
         }, {
           default: () => rowData.prefix,
@@ -138,7 +137,7 @@ onMounted(() => {
   <n-space vertical>
     <div class="flex gap-4">
       <NSpace class="ml-a">
-        <NButton strong type="primary" class="ml-a" @click="createApiKeyModelVisible = !createApiKeyModelVisible">
+        <NButton strong type="primary" class="ml-a" @click="createApiKeyModalVisible = !createApiKeyModalVisible">
           <template #icon>
             <NovaIcon icon="carbon:add-large" />
           </template>
@@ -151,7 +150,7 @@ onMounted(() => {
       :columns="columns"
       :data="apiKeyList"
     />
-    <CreateApiKeyModel v-model:show="createApiKeyModelVisible" />
+    <CreateApiKeyModel v-model:show="createApiKeyModalVisible" />
   </n-space>
 </template>
 
