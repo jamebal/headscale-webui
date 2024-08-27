@@ -3,8 +3,11 @@ import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { onMounted, ref, shallowRef } from 'vue'
 import { NButton } from 'naive-ui'
 import { fetchPolicy, setPolicy } from '@/service'
+import { useAppStore } from '@/store'
 
 const { t } = useI18n()
+
+const appStore = useAppStore()
 
 const monacoEditorOptions = {
   automaticLayout: true,
@@ -20,6 +23,8 @@ const code = ref('{ }')
 const editorRef = shallowRef()
 const handleMount = (editor: any) => (editorRef.value = editor)
 const editorHeight = ref(window.innerHeight - 136)
+
+const darkMode = computed(() => appStore.colorMode === 'dark')
 
 function getPolicyContent() {
   fetchPolicy().then((res) => {
@@ -68,7 +73,7 @@ onMounted(() => {
       v-model:value="code"
       :style="{ height: `${editorHeight}px` }"
       language="json"
-      theme="vs-light"
+      :theme="darkMode ? 'vs-dark' : 'vs'"
       :options="monacoEditorOptions"
       @mount="handleMount"
     />
