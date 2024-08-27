@@ -10,6 +10,16 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     pid: null,
   },
   {
+    name: 'routes',
+    path: '/route',
+    title: 'routes',
+    requiresAuth: true,
+    icon: 'local:route',
+    componentPath: '/route/index.vue',
+    id: 2,
+    pid: null,
+  },
+  {
     name: 'apiKeys',
     path: '/apiKey',
     title: 'apiKeys',

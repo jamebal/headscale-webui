@@ -1,4 +1,3 @@
-import type { TimeUnit } from 'echarts/types/src/util/time'
 import { getRequestInstance } from '../http/instances'
 
 const request = getRequestInstance()
@@ -6,9 +5,9 @@ const request = getRequestInstance()
 export interface ApiKeyData {
   id: string
   prefix: string
-  expiration: TimeUnit
-  createdAt: TimeUnit
-  lastSeen: TimeUnit
+  expiration: string
+  createdAt: string
+  lastSeen: string
 }
 
 export function fetchApiKeyList() {

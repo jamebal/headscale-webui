@@ -12,7 +12,11 @@
     "delete": "删除",
     "success": "成功",
     "failed": "失败",
-    "areYouSure": "你确定吗？"
+    "areYouSure": "你确定吗？",
+    "yes": "是",
+    "no": "否",
+    "enable": "启用",
+    "disable": "禁用"
   },
   "app": {
     "loginOut": "退出登录",
@@ -62,7 +66,11 @@
     "backfillipsConfirm": "Backfill IPs 可用于根据 Headscale 的当前配置向节点添加或移除 IP。\r\n如果有节点未分配 IPv4 或 IPv6，即使在配置文件中已配置了这两种前缀，也可以使用此命令为所有缺少 IP 的节点分配相应的 IP。\n如果您从配置中移除了 IPv4 或 IPv6 前缀，则可以运行此命令来移除不应再分配给节点的 IP。\n您确定要为节点分配或移除 IP 吗？",
     "logout": "注销",
     "node": "节点",
-    "createApiKey": "创建 API Key"
+    "createApiKey": "创建 API Key",
+    "advertised": "广播",
+    "enabled": "启用状态",
+    "isPrimary": "主路由",
+    "route": "路由"
   },
   "http": {
     "400": "请求出现语法错误",
@@ -89,7 +97,8 @@
   "route": {
     "appRoot": "首页",
     "nodes": "节点管理",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "routes": "路由管理"
   },
   "components": {
     "copyText": {

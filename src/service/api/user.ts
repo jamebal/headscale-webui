@@ -1,4 +1,3 @@
-import type { TimeUnit } from 'echarts/types/src/util/time'
 import { getRequestInstance } from '../http/instances'
 
 const request = getRequestInstance()
@@ -6,7 +5,7 @@ const request = getRequestInstance()
 export interface User {
   id: number
   name: string
-  createdAt: TimeUnit
+  createdAt: string
 }
 
 export function fetchUserList() {

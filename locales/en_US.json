@@ -12,7 +12,11 @@
     "delete": "Delete",
     "success": "successful",
     "failed": "failed",
-    "areYouSure": "Are you sure?"
+    "areYouSure": "Are you sure?",
+    "yes": "Yes",
+    "no": "No",
+    "enable": "Enable",
+    "disable": "Disable"
   },
   "app": {
     "loginOut": "Login out",
@@ -61,8 +65,12 @@
     "backfillips": "Backfill IPs",
     "backfillipsConfirm": "Backfill IPs can be used to add/remove IPs from nodes\nbased on the current configuration of Headscale.\n\nIf there are nodes that does not have IPv4 or IPv6\neven if prefixes for both are configured in the config,\nthis command can be used to assign IPs of the sort to\nall nodes that are missing.\n\nIf you remove IPv4 or IPv6 prefixes from the config,\nit can be run to remove the IPs that should no longer\nbe assigned to nodes. \n Are you sure that you want to assign/remove IPs to/from nodes?",
     "logout": "Log out",
-    "node": "node",
-    "createApiKey": "Create API Key"
+    "node": "Node",
+    "createApiKey": "Create API Key",
+    "advertised": "Advertised",
+    "enabled": "Enabled",
+    "isPrimary": "Primary",
+    "route": "Route"
   },
   "http": {
     "400": "Syntax error in the request",
@@ -89,7 +97,8 @@
   "route": {
     "appRoot": "Home",
     "nodes": "Nodes",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "routes": "Routes"
   },
   "components": {
     "copyText": {

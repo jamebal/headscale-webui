@@ -1,4 +1,3 @@
-import type { TimeUnit } from 'echarts/types/src/util/time'
 import { getRequestInstance } from '../http/instances'
 import type { User } from './user'
 
@@ -21,10 +20,10 @@ export interface NodeData {
   invalidTags: Array<string>
   forcedTags: Array<string>
   registerMethod: string
-  createdAt: TimeUnit
+  createdAt: string
   preAuthKey: string
-  expiry: TimeUnit
-  lastSeen: TimeUnit
+  expiry: string
+  lastSeen: string
   machineKey: string
   nodeKey: string
   discoKey: string
