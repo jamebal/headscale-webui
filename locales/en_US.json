@@ -70,7 +70,9 @@
     "advertised": "Advertised",
     "enabled": "Enabled",
     "isPrimary": "Primary",
-    "route": "Route"
+    "route": "Route",
+    "user": "User",
+    "createUser": "Create User"
   },
   "http": {
     "400": "Syntax error in the request",
@@ -98,7 +100,8 @@
     "appRoot": "Home",
     "nodes": "Nodes",
     "apiKeys": "API Keys",
-    "routes": "Routes"
+    "routes": "Routes",
+    "users": "Users"
   },
   "components": {
     "copyText": {

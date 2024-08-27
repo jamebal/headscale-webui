@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FormInst } from 'naive-ui'
-import { type NodeData, renameNode } from '@/service/api/node'
+import { createUser } from '@/service'
 
 import { useAppStore } from '@/store'
 
@@ -9,10 +9,6 @@ const props = defineProps(
     show: {
       type: Boolean,
       default: false,
-    },
-    nodeData: {
-      type: Object as PropType<NodeData>,
-      required: true,
     },
   },
 )
@@ -24,8 +20,7 @@ const appStore = useAppStore()
 const { t } = useI18n()
 
 const formModal = ref<any>({
-  nodeId: null,
-  newName: null,
+  name: '',
 })
 
 const modalVisible = ref(props.show)
@@ -41,13 +36,11 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
-  formModal.value.newName = props.nodeData?.givenName
-  formModal.value.nodeId = props.nodeData?.id
 })
 
 const rules = computed(() => {
   return {
-    newName: {
+    name: {
       required: true,
       trigger: 'blur',
       message: t('common.inputPlaceholder'),
@@ -59,16 +52,17 @@ const formRef = ref<FormInst | null>(null)
 
 function handleSubmit() {
   formRef.value?.validate(async (errors) => {
+    console.log(errors)
     if (errors)
       return
     isLoading.value = true
-    const result = await renameNode(formModal.value)
+    const result = await createUser(formModal.value.name)
     if (!result || !result.isSuccess) {
       isLoading.value = false
       return
     }
-    appStore.sendMessage({ event: 'refreshNodeList', data: {} })
-    window.$message.success(`${t('app.renameNode')} ${t('common.success')}`)
+    appStore.sendMessage({ event: 'refreshUserList', data: {} })
+    window.$message.success(`${t('app.createUser')} ${t('common.success')}`)
     isLoading.value = false
     closeModal()
   })
@@ -80,7 +74,7 @@ function handleSubmit() {
     v-model:show="modalVisible"
     :mask-closable="false"
     preset="card"
-    :title="t('app.renameNode')"
+    :title="t('app.createUser')"
     class="w-520px"
     :segmented="{
       content: true,
@@ -88,8 +82,8 @@ function handleSubmit() {
     }"
   >
     <n-form ref="formRef" label-placement="left" :rules="rules" :model="formModal" label-align="left" :label-width="90">
-      <n-form-item path="newName">
-        <n-input v-model:value="formModal.newName" />
+      <n-form-item path="name" :label="t('app.username')">
+        <n-input v-model:value="formModal.name" />
       </n-form-item>
     </n-form>
     <template #action>

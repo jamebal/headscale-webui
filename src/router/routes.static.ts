@@ -10,6 +10,16 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     pid: null,
   },
   {
+    name: 'users',
+    path: '/user',
+    title: 'users',
+    requiresAuth: true,
+    icon: 'carbon:user-avatar-filled',
+    componentPath: '/user/index.vue',
+    id: 2,
+    pid: null,
+  },
+  {
     name: 'routes',
     path: '/route',
     title: 'routes',

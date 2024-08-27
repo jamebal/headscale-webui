@@ -1,27 +1,26 @@
 import type { DialogApiInjection } from 'naive-ui/lib/dialog/src/DialogProvider'
 import { useAppStore } from '@/store/app'
-import {deleteRoute} from "@/service";
+import { deleteUser } from '@/service'
 
 const appStore = useAppStore()
 
-export function showDeleteRouteDialog(
+export function showDeleteUserDialog(
   dialog: DialogApiInjection,
   t: (key: string) => string,
-  routeId: string,
-  prefix: string,
+  username: string,
 ) {
   const d = dialog.warning({
     title: t('common.delete'),
-    content: `${t('common.delete')} ${t('app.route')}【 ${prefix} 】, ${t('common.areYouSure')}`,
+    content: `${t('common.delete')} ${t('app.user')}【 ${username} 】, ${t('common.areYouSure')}`,
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       d.loading = true
-      const result = await deleteRoute(routeId)
+      const result = await deleteUser(username)
       if (!result || !result.isSuccess) {
         return
       }
-      appStore.sendMessage({ event: 'refreshRouteList', data: {} })
+      appStore.sendMessage({ event: 'refreshUserList', data: {} })
       window.$message.success(`${t('common.delete')} ${t('common.success')}`)
       d.loading = false
     },

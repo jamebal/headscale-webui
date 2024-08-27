@@ -70,7 +70,9 @@
     "advertised": "广播",
     "enabled": "启用状态",
     "isPrimary": "主路由",
-    "route": "路由"
+    "route": "路由",
+    "user": "用户",
+    "createUser": "创建用户"
   },
   "http": {
     "400": "请求出现语法错误",
@@ -98,7 +100,8 @@
     "appRoot": "首页",
     "nodes": "节点管理",
     "apiKeys": "API Keys",
-    "routes": "路由管理"
+    "routes": "路由管理",
+    "users": "用户管理"
   },
   "components": {
     "copyText": {

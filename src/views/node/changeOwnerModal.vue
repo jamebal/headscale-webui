@@ -28,6 +28,7 @@ const { t } = useI18n()
 
 const modalVisible = ref(props.show)
 const isLoading = ref(false)
+const selectUser = ref('')
 
 function closeModal() {
   modalVisible.value = false
@@ -39,14 +40,13 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
+  selectUser.value = props.nodeData.user.name
 })
 
 const userOptions = computed(() => props.userList.map(user => ({
   label: user.name,
   value: user.name,
 })))
-
-const selectUser = ref('')
 
 async function handleSubmit() {
   isLoading.value = true

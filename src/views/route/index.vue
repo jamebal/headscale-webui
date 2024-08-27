@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/store'
 import type { RouteData } from '@/service'
 import { disableRoute, enableRoute, fetchRouteList } from '@/service'
-import {showDeleteRouteDialog} from "@/views/route/expireRouteDialog";
+import {showDeleteRouteDialog} from "@/views/route/deleteRouteDialog";
 
 const { t } = useI18n()
 
