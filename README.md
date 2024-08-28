@@ -33,6 +33,11 @@ services:
 ### Dev
 
 ```shell
+git clone https://github.com/jamebal/headscale-webui
+cd headscale-webui
+```
+
+```shell
 npm install
 ```
 ```
