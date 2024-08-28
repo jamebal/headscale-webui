@@ -2,6 +2,10 @@
 
 一个与 Tailscale 兼容的编排服务器 Web 前端，用于 [headscale](https://github.com/juanfont/headscale)
 
+### 部份截图:
+![截屏2024-08-28 10.03.57.png](doc%2F%E6%88%AA%E5%B1%8F2024-08-28%2010.03.57.png)
+![截屏2024-08-28 10.06.21.png](doc%2F%E6%88%AA%E5%B1%8F2024-08-28%2010.06.21.png)
+
 ## 安装
 
 ### 环境变量
