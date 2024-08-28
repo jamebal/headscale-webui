@@ -13,7 +13,7 @@ async function setupApp() {
   const app = createApp(AppVue)
 
   // 注册模块Pinia
-  installPinia(app)
+  await installPinia(app)
 
   // 注册模块 Vue-router
   await installRouter(app)
@@ -32,4 +32,4 @@ async function setupApp() {
   app.mount('#app')
 }
 
-await setupApp()
+setupApp()
