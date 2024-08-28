@@ -20,3 +20,23 @@
 Netlify 非常棒，因此如果你需要一个地方来托管你自己版本的这个项目，我强烈推荐它。
 
 [![部署到 Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/jamebal/headscale-webui)
+
+### Docker Compose
+
+```yaml
+services:
+  headscale-webui:
+    image: docker.jmalx.com/jmal/headscale-webui
+    restart: unless-stopped
+    ports:
+      - 4567:80
+```
+
+### Dev
+
+```shell
+npm install
+```
+```
+npm run dev
+```

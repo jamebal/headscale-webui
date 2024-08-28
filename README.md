@@ -18,3 +18,23 @@ A Tailscale-compatible orchestration server web front-end for [headscale](https:
 Netlify is amazing, so if you're in need of somewhere to host your own version of this project, I highly recommend it.
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/jamebal/headscale-webui)
+
+### Docker Compose
+
+```yaml
+services:
+  headscale-webui:
+    image: docker.jmalx.com/jmal/headscale-webui
+    restart: unless-stopped
+    ports:
+      - 4567:80
+```
+
+### Dev
+
+```shell
+npm install
+```
+```
+npm run dev
+```
