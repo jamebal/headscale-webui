@@ -28,6 +28,7 @@
     "dev:test": "vite --mode test",
     "dev:prod": "vite --mode prod",
     "build": "vue-tsc --noEmit && vite build --mode prod",
+    "build:prod": "vite build --mode prod",
     "build:dev": "vue-tsc --noEmit && vite build --mode dev",
     "build:test": "vue-tsc --noEmit && vite build --mode test",
     "preview": "vite preview --port 9981",
