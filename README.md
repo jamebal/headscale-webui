@@ -1,6 +1,8 @@
 # headscale-webui
 A Tailscale-compatible orchestration server web front-end for [headscale](https://github.com/juanfont/headscale)
 
+Supported Headscale version: `v0.23.0-beta2`
+
 ### Some screenshots:
 ![node_demo.png](doc/node_demo.png)
 ![policy_demo.png](doc/policy_demo.png)
