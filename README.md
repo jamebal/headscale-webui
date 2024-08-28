@@ -24,7 +24,7 @@ Netlify is amazing, so if you're in need of somewhere to host your own version o
 ```yaml
 services:
   headscale-webui:
-    image: docker.jmalx.com/jmal/headscale-webui
+    image: jmal/headscale-webui
     restart: unless-stopped
     ports:
       - 4567:80

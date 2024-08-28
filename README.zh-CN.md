@@ -26,7 +26,7 @@ Netlify 非常棒，因此如果你需要一个地方来托管你自己版本的
 ```yaml
 services:
   headscale-webui:
-    image: docker.jmalx.com/jmal/headscale-webui
+    image: jmal/headscale-webui
     restart: unless-stopped
     ports:
       - 4567:80
