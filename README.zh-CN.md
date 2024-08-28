@@ -3,8 +3,8 @@
 一个与 Tailscale 兼容的编排服务器 Web 前端，用于 [headscale](https://github.com/juanfont/headscale)
 
 ### 部份截图:
-![node_demo.png](doc/Fnode_demo.png)
-![policy_demo.png](doc/Fpolicy_demo.png)
+![node_demo.png](doc/node_demo.png)
+![policy_demo.png](doc/policy_demo.png)
 
 ## 安装
 
