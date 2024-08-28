@@ -28,7 +28,7 @@ jobs:
         run: pnpm install
 
       - name: Build
-        run: vite build --mode prod
+        run: pnpm run build:prod
 
       - name: Extract project version from package.json
         run: |
