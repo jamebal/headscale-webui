@@ -17,6 +17,7 @@ import NodeDetails from '@/views/node/nodeDetails.vue'
 import NodeActions from '@/views/node/nodeActions.vue'
 import { useAppStore } from '@/store'
 import { showBackfillipsDialog } from '@/views/node/backfillIpsDialog'
+import NodeSubNetDetails from "@/views/node/nodeSubNetDetails.vue";
 
 const dialog = useDialog()
 
@@ -82,20 +83,11 @@ const columns = computed((): DataTableColumns<NodeData> => [
           h('span', rowData.givenName),
           h('br'),
           h('span', { style: { color: 'var(--test-color-fringe)' } }, rowData.name),
-          rowData.prefixList && rowData.prefixList.length > 0
-            ? h(NTag, {
-              show: false,
-              size: 'small',
-              style: {
-                marginLeft: '10px',
-              },
-              type: 'info',
-              bordered: true,
-            }, {
-              default: () => t('app.subnets'),
+          rowData.routes && rowData.routes.length > 0
+            ? h(NodeSubNetDetails, {
+              nodeData: rowData,
             })
             : '',
-          // rowData.prefixList ? h('span', { style: { marginLeft: '14px', color: 'var(--test-color-fringe)' } }, rowData.prefixList.join('\n')) : null,
         ],
       )
     },
@@ -122,7 +114,6 @@ const columns = computed((): DataTableColumns<NodeData> => [
             default: () => row.ipAddresses[0],
           }),
           h('br'),
-          // row.prefixList ? h('span', { style: { marginLeft: '14px', color: 'var(--test-color-fringe)' } }, row.prefixList.join('\n')) : null,
         ],
       )
     },
@@ -195,10 +186,10 @@ const columns = computed((): DataTableColumns<NodeData> => [
 
 function addRoutePrefixToNodes() {
   nodeList.value.forEach((node) => {
-    node.prefixList = []
+    node.routes = []
     routeList.value.forEach((route) => {
       if (route.node.id === node.id) {
-        node.prefixList.push(route.prefix)
+        node.routes.push(route)
       }
     })
   })

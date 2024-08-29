@@ -1,5 +1,6 @@
 import { getRequestInstance } from '../http/instances'
 import type { User } from './user'
+import type { RouteData } from '@/service'
 
 const request = getRequestInstance()
 
@@ -13,7 +14,7 @@ export interface NodeData {
   name: string
   user: User
   ipAddresses: Array<string>
-  prefixList: Array<string>
+  routes: Array<RouteData>
   online: boolean
   givenName: string
   validTags: Array<string>
