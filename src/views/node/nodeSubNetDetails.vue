@@ -18,7 +18,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <n-popover trigger="click" placement="top">
+  <n-popover trigger="click" placement="bottom">
     <template #trigger>
       <n-tag type="info" size="small" style="margin-left: 10px;">
         {{ `${t('app.subnets')} ${enableCount}/${routeCount}` }}
