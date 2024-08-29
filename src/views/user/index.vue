@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import {DataTableColumns, NTag} from 'naive-ui'
+import type { DataTableColumns } from 'naive-ui'
 import { NButton, NTime } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/store'
@@ -10,7 +10,7 @@ import { showDeleteUserDialog } from '@/views/user/deleteUserDialog'
 import NovaIcon from '@/components/common/NovaIcon.vue'
 import CreateUserModal from '@/views/user/createUserModal.vue'
 import RenameUserModal from '@/views/user/renameUserModal.vue'
-import PreAuthKeysModal from "@/views/user/preAuthKeysModal.vue";
+import PreAuthKeysModal from '@/views/user/preAuthKeysModal.vue'
 
 const { t } = useI18n()
 
