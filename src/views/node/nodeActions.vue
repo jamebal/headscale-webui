@@ -86,7 +86,7 @@ function handleAction(key: string) {
 
 <template>
   <n-dropdown :options="options" trigger="click" @select="handleAction">
-    <NButton size="small">
+    <NButton size="small" secondary>
       <NovaIcon icon="carbon:overflow-menu-horizontal" />
     </NButton>
   </n-dropdown>

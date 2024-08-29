@@ -36,6 +36,7 @@
     "status": "Status",
     "online": "Online",
     "expired": "Expired",
+    "never": "Never",
     "expire": "Expire",
     "lastSeen": "Last Seen",
     "action": "Action",
@@ -54,7 +55,13 @@
     "validTags": "Valid Tags",
     "expiry": "Expiration",
     "prefix": "Prefix",
+    "key": "Key",
     "preAuthKey": "PreAuthKey",
+    "preAuthKeys": "PreAuthKeys",
+    "reusable": "Reusable",
+    "ephemeral": "Ephemeral",
+    "used": "Used",
+    "aclTags": "ACL Tags",
     "machineKey": "MachineKey",
     "nodeKey": "NodeKey",
     "discoKey": "DiscoKey",
@@ -75,8 +82,10 @@
     "route": "Route",
     "user": "User",
     "createUser": "Create User",
+    "createPreAuthKey": "Create PreAuthKey",
     "renameUser": "Rename User",
-    "updateTime": "Update Time"
+    "updateTime": "Update Time",
+    "hideInvalid": "Hide Invalid"
   },
   "http": {
     "400": "Syntax error in the request",

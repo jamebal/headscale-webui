@@ -16,7 +16,7 @@ const { t } = useI18n()
 <template>
   <n-popover trigger="click" placement="left">
     <template #trigger>
-      <n-button size="small">
+      <n-button size="small" secondary>
         {{ t('app.details') }}
       </n-button>
     </template>

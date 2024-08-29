@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   maxLength?: string
+  actualValue: string
 }>()
 const modelValue = defineModel<string>('value')
 </script>
@@ -12,7 +13,7 @@ const modelValue = defineModel<string>('value')
     </n-ellipsis>
     <n-tooltip trigger="hover">
       <template #trigger>
-        <span v-copy="modelValue" class="cursor-pointer">
+        <span v-copy="actualValue" class="cursor-pointer">
           <icon-park-outline-copy />
         </span>
       </template>

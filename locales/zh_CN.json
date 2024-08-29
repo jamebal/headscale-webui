@@ -36,6 +36,7 @@
     "status": "状态",
     "online": "在线",
     "expired": "已过期",
+    "never": "永久",
     "expire": "过期",
     "lastSeen": "上次在线时间",
     "action": "操作",
@@ -54,7 +55,13 @@
     "validTags": "有效标签",
     "expiry": "过期时间",
     "prefix": "前缀",
+    "key": "密钥",
     "preAuthKey": "预授权密钥",
+    "preAuthKeys": "预授权密钥",
+    "reusable": "可复用",
+    "ephemeral": "临时的",
+    "used": "已使用",
+    "aclTags": "ACL 标签",
     "machineKey": "机器密钥",
     "nodeKey": "节点密钥",
     "discoKey": "DiscoKey",
@@ -75,8 +82,10 @@
     "route": "路由",
     "user": "用户",
     "createUser": "创建用户",
+    "createPreAuthKey": "创建预授权密钥",
     "renameUser": "重命名用户",
-    "updateTime": "更新时间"
+    "updateTime": "更新时间",
+    "hideInvalid": "隐藏无效"
   },
   "http": {
     "400": "请求出现语法错误",
