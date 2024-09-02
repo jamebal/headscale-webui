@@ -21,3 +21,11 @@ const naiveLocale = computed(() => {
     </naive-provider>
   </n-config-provider>
 </template>
+
+<style lang="scss">
+.v-binder-follower-content {
+  .n-cascader-menu .n-cascader-submenu:not(:first-child) {
+    width: 360px !important;
+  }
+}
+</style>

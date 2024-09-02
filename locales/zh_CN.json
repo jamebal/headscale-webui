@@ -18,7 +18,11 @@
     "no": "否",
     "enable": "启用",
     "disable": "禁用",
-    "rename": "重命名"
+    "rename": "重命名",
+    "exists": "已存在",
+    "download": "下载",
+    "client": "客户端",
+    "staticBinaries": "静态二进制文件"
   },
   "app": {
     "loginOut": "退出登录",
@@ -85,7 +89,34 @@
     "createPreAuthKey": "创建预授权密钥",
     "renameUser": "重命名用户",
     "updateTime": "更新时间",
-    "hideInvalid": "隐藏无效"
+    "hideInvalid": "隐藏无效",
+
+    "shieldsUp": "不允许传入连接（默认值为 false）",
+    "qr": "显示用于登录 URL 的二维码（默认值为 false）",
+    "rest": "将未指定的设置重置为默认值（默认值为 false）",
+    "operator": "允许操作 Tailscale 的 Unix 用户名，无需 sudo",
+    "forceReauth": "强制重新认证（默认值为 false）",
+    "ssh": "运行 SSH 服务器，允许根据 Tailscale 管理员的声明策略进行访问（默认值为 false）",
+    "authKey": "节点授权密钥；如果以 \"file:\" 开头，则表示它是包含授权密钥的文件路径",
+    "hostname": "使用指定的主机名而不是操作系统提供的主机名",
+    "timeout": "等待 Tailscaled 进入运行状态的最大时间；默认值（0s）表示无限期阻塞（默认值为 0s）",
+
+    "acceptDns": "接受来自管理面板的 DNS 配置（默认值为 true）",
+    "acceptRisk": "接受风险并跳过风险类型的确认：lose-ssh,all",
+    "acceptRiskOptions": {
+      "lose-ssh": "lose-ssh",
+      "all": "all"
+    },
+    "acceptRoutes": "接受其他 Tailscale 节点广告的路由（默认值为 true）",
+    "exitNode": "用于互联网流量的 Tailscale 退出节点（IP 或基本名称），或者为空字符串表示不使用出口节点",
+
+    "advertiseConnector": "将此节点广告为应用程序连接器（默认值为 false）",
+    "advertiseExitNode": "提供作为 tailnet 的互联网流量出口节点（默认值为 false）",
+    "exitNodeAllowLanAccess": "在通过出口节点路由流量时允许直接访问本地网络（默认值为 false）",
+    "advertiseTags": "请求的逗号分隔的 ACL 标签；每个标签必须以 \"tag:\" 开头（例如 \"tag:eng,tag:montreal,tag:ssh\"）",
+    "advertiseRoutes": "向其他节点广告的路由（逗号分隔，例如 \"10.0.0.0/8,192.168.0.0/24\"），或为空字符串表示不广告路由",
+    "InvalidCIDR": "无效的 CIDR 格式"
+
   },
   "http": {
     "400": "请求出现语法错误",
@@ -115,7 +146,8 @@
     "apiKeys": "API Keys",
     "routes": "路由管理",
     "users": "用户管理",
-    "policy": "策略"
+    "policy": "策略",
+    "deploy": "部署"
   },
   "components": {
     "copyText": {

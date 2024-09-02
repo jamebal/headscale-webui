@@ -3,7 +3,7 @@ import { getRequestInstance } from '../http/instances'
 const request = getRequestInstance()
 
 export interface User {
-  id: number
+  id: string
   name: string
   createdAt: string
 }

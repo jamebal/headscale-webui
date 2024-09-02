@@ -18,7 +18,11 @@
     "no": "No",
     "enable": "Enable",
     "disable": "Disable",
-    "rename": "Rename"
+    "rename": "Rename",
+    "exists": "Already exists",
+    "download": "Download",
+    "client": "Client",
+    "staticBinaries": "Static Binaries"
   },
   "app": {
     "loginOut": "Login out",
@@ -85,7 +89,34 @@
     "createPreAuthKey": "Create PreAuthKey",
     "renameUser": "Rename User",
     "updateTime": "Update Time",
-    "hideInvalid": "Hide Invalid"
+    "hideInvalid": "Hide Invalid",
+
+    "shieldsUp": "don't allow incoming connections (default false)",
+    "qr": "show QR code for login URLs (default false)",
+    "rest": "reset unspecified settings to their default values (default false)",
+    "operator": "Unix username to allow to operate on tailscaled without sudo",
+    "forceReauth": "force reauthentication (default false)",
+    "ssh": "run an SSH server, permitting access per tailnet admin's declared policy (default false)",
+    "authKey": "node authorization key; if it begins with \"file:\", then it's a path to a file containing the authkey",
+    "hostname": "hostname to use instead of the one provided by the OS",
+    "timeout": "maximum amount of time to wait for tailscaled to enter a Running state; default (0s) blocks forever (default 0s)",
+
+    "acceptDns": "accept DNS configuration from the admin panel (default true)",
+    "acceptRisk": "accept risk and skip confirmation for risk types: lose-ssh,all",
+    "acceptRiskOptions": {
+      "lose-ssh": "lose-ssh",
+      "all": "all"
+    },
+    "acceptRoutes": "accept routes advertised by other Tailscale nodes (default true)",
+    "exitNode": "Tailscale exit node (IP or base name) for internet traffic, or empty string to not use an exit node",
+
+    "advertiseConnector": "advertise this node as an app connector (default false)",
+    "advertiseExitNode": "offer to be an exit node for internet traffic for the tailnet (default false)",
+    "exitNodeAllowLanAccess": "Allow direct access to the local network when routing traffic via an exit node (default false)",
+    "advertiseTags": "comma-separated ACL tags to request; each must start with \"tag:\" (e.g. \"tag:eng,tag:montreal,tag:ssh\")",
+    "advertiseRoutes": "routes to advertise to other nodes (comma-separated, e.g. \"10.0.0.0/8,192.168.0.0/24\") or empty string to not advertise routes",
+    "InvalidCIDR": "invalid CIDR format"
+
   },
   "http": {
     "400": "Syntax error in the request",
@@ -115,7 +146,8 @@
     "apiKeys": "API Keys",
     "routes": "Routes",
     "users": "Users",
-    "policy": "Policy"
+    "policy": "Policy",
+    "deploy": "Deploy"
   },
   "components": {
     "copyText": {

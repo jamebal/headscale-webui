@@ -2,6 +2,7 @@
 import type { NodeData } from '@/service/api/node'
 import { setTagsOfNode } from '@/service/api/node'
 import { useAppStore } from '@/store/app'
+import {handleTagCreate} from "@/utils/tags";
 
 const props = defineProps(
   {
@@ -40,10 +41,7 @@ watch(() => props.show, (newVal) => {
   tags.value = props.nodeData.forcedTags.map(tag => ({ label: tag, value: tag }))
 })
 
-const handleCreate: (label: string) => { label: string, value: string } = (label) => {
-  const newValue = `tag:${label.trim().replace(/\s+/g, '')}`
-  return { label: newValue, value: newValue }
-}
+const handleCreate: (label: string) => { label: string, value: string } = label => handleTagCreate(label, tags, t)
 
 async function handleSubmit() {
   const tagsValue = tags.value.map(tag => tag.value)

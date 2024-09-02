@@ -11,6 +11,12 @@ const props = defineProps<Props>()
     <template #trigger>
       <icon-park-outline-help class="op-50 cursor-help" />
     </template>
-    {{ props.message }}
+    <span class="tooltip-message">{{ props.message }}</span>
   </n-tooltip>
 </template>
+
+<style scoped>
+.tooltip-message {
+  white-space: pre-wrap;
+}
+</style>

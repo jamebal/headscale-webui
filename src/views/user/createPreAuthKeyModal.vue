@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { useAppStore } from '@/store/app'
 import type { PreAuthKeyFormData } from '@/service'
 import { createPreAuthKey } from '@/service'
+import {handleTagCreate} from "@/utils/tags";
 
 const props = defineProps(
   {
@@ -102,10 +103,7 @@ function handleSubmit() {
 function dateDisabled(timestamp: number) {
   return timestamp < new Date().getTime() + 1000 * 60 * 60
 }
-const handleCreate: (label: string) => { label: string, value: string } = (label) => {
-  const newValue = `tag:${label.trim().replace(/\s+/g, '')}`
-  return { label: newValue, value: newValue }
-}
+const handleCreate: (label: string) => { label: string, value: string } = label => handleTagCreate(label, tags, t)
 </script>
 
 <template>

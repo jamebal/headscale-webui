@@ -50,6 +50,7 @@ function enableOrDisableRoute(id: string) {
         return
       }
       window.$message.success(`${t('common.disable')} ${t('common.success')}`)
+      appStore.sendMessage({ event: 'refreshNodeList', data: {} })
       renderRouteList()
     })
   }
@@ -60,6 +61,7 @@ function enableOrDisableRoute(id: string) {
         return
       }
       window.$message.success(`${t('common.enable')} ${t('common.success')}`)
+      appStore.sendMessage({ event: 'refreshNodeList', data: {} })
       renderRouteList()
     })
   }

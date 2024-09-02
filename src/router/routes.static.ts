@@ -26,7 +26,7 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     requiresAuth: true,
     icon: 'local:route',
     componentPath: '/route/index.vue',
-    id: 2,
+    id: 3,
     pid: null,
   },
   {
@@ -36,7 +36,7 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     requiresAuth: true,
     icon: 'carbon:api-key',
     componentPath: '/apiKey/index.vue',
-    id: 2,
+    id: 4,
     pid: null,
   },
   {
@@ -46,7 +46,17 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     requiresAuth: true,
     icon: 'carbon:vpn-policy',
     componentPath: '/policy/index.vue',
-    id: 2,
+    id: 5,
+    pid: null,
+  },
+  {
+    name: 'deploy',
+    path: '/deploy',
+    title: 'deploy',
+    requiresAuth: false,
+    icon: 'carbon:deploy',
+    componentPath: '/deploy/index.vue',
+    id: 6,
     pid: null,
   },
 ]
