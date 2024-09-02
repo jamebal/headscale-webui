@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { useAppStore } from '@/store/app'
 import type { PreAuthKeyFormData } from '@/service'
 import { createPreAuthKey } from '@/service'
-import {handleTagCreate} from "@/utils/tags";
+import { handleTagCreate } from '@/utils/tags'
 
 const props = defineProps(
   {

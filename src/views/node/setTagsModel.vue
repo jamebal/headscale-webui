@@ -2,7 +2,7 @@
 import type { NodeData } from '@/service/api/node'
 import { setTagsOfNode } from '@/service/api/node'
 import { useAppStore } from '@/store/app'
-import {handleTagCreate} from "@/utils/tags";
+import { handleTagCreate } from '@/utils/tags'
 
 const props = defineProps(
   {
