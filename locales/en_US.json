@@ -134,7 +134,7 @@
     "defaultTip": "Request error"
   },
   "login": {
-    "signIn": "sing in",
+    "signIn": "Sing in",
     "accountPlaceholder": "Enter Server Url",
     "passwordPlaceholder": "Enter ApiKey",
     "accountRuleTip": "Please enter Server Url",
