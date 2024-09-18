@@ -2,7 +2,7 @@
 
 一个与 Tailscale 兼容的编排服务器 Web 前端，用于 [headscale](https://github.com/juanfont/headscale)
 
-支持的Headscale版本: : [v0.23.0-beta2](https://github.com/juanfont/headscale/releases/tag/v0.23.0-beta2)
+支持的Headscale版本: : [v0.23.0](https://github.com/juanfont/headscale/releases/tag/v0.23.0)
 
 ### 部份截图:
 ![node_demo.png](doc/node_demo.png)
