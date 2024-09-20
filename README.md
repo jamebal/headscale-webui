@@ -4,8 +4,12 @@ A Tailscale-compatible orchestration server web front-end for [headscale](https:
 Supported Headscale version: [v0.23.0](https://github.com/juanfont/headscale/releases/tag/v0.23.0)
 
 ### Some screenshots:
-![node_demo.png](doc/node_demo.png)
-![policy_demo.png](doc/policy_demo.png)
+![node.png](doc/node.png)
+![user.png](doc/user.png)
+![route.png](doc/route.png)
+![apiKeys.png](doc/apiKeys.png)
+![policy.png](doc/policy.png)
+![deploy.png](doc/deploy.png)
 
 ## Install
 
