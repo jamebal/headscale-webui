@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import type { NodeData } from '@/service/api/node'
 import RouteTable from '@/views/route/routeTable.vue'
+import type { RouteData } from '@/service'
 
 const props = defineProps(
   {
-    nodeData: {
-      type: Object as PropType<NodeData>,
+    routes: {
+      type: Array as () => Array<RouteData>,
       required: true,
     },
   },
 )
 
-const routeCount = props.nodeData.routes?.length
-const enableCount = props.nodeData.routes?.filter(route => route?.enabled)?.length
+const routeCount = props.routes?.length
+const enableCount = props.routes?.filter(route => route?.enabled)?.length
 
 const { t } = useI18n()
 </script>
@@ -24,7 +24,7 @@ const { t } = useI18n()
         {{ `${t('app.subnets')} ${enableCount}/${routeCount}` }}
       </n-tag>
     </template>
-    <RouteTable :routes="nodeData.routes" hide-node-name />
+    <RouteTable :routes="routes" hide-node-name />
   </n-popover>
 </template>
 

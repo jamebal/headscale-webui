@@ -76,6 +76,10 @@ const columns = computed((): DataTableColumns<NodeData> => [
     title: t('app.name'),
     key: 'name',
     render(rowData) {
+      let routes = []
+      if (rowData.routes && rowData.routes.length > 0) {
+        routes = rowData.routes.filter(route => route.isPrimary)
+      }
       return h(
         'div',
         { style: { whiteSpace: 'pre-line' } },
@@ -83,9 +87,9 @@ const columns = computed((): DataTableColumns<NodeData> => [
           h('span', rowData.givenName),
           h('br'),
           h('span', { style: { color: 'var(--test-color-fringe)' } }, rowData.name),
-          rowData.routes && rowData.routes.length > 0
+          routes.length > 0
             ? h(NodeSubNetDetails, {
-              nodeData: rowData,
+              routes: rowData.routes,
             })
             : '',
         ],
