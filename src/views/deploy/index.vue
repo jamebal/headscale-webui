@@ -98,7 +98,7 @@ function changeOption(value: string[]) {
   if (value.includes('--exit-node')) {
     renderExitNodeOptions()
   }
-  if (!value.includes('--advertise-exit-node')) {
+  if (!value.includes('--exit-node')) {
     // 去掉--exit-node-allow-lan-access
     options.value = options.value.filter(option => option !== '--exit-node-allow-lan-access')
   }
@@ -374,6 +374,14 @@ onMounted(() => {
                   </div>
                 </n-checkbox>
                 <n-select v-if="options.includes('--exit-node')" v-model:value="exitNode" :options="exitNodeOptions" @update-value="onexitNodeUpdate" />
+                <n-checkbox v-if="options.includes('--exit-node') && exitNode" value="--exit-node-allow-lan-access" class="pl-20">
+                  <div class="option-command">
+                    Allow LAN Access
+                    <div class="help-footnote">
+                      <help-info :message="`--exit-node-allow-lan-access, --exit-node-allow-lan-access=false \r\n   ${t('app.exitNodeAllowLanAccess')}`" />
+                    </div>
+                  </div>
+                </n-checkbox>
               </n-flex>
             </n-gi>
           </n-grid>
@@ -402,14 +410,6 @@ onMounted(() => {
                     Advertise Exit Node
                     <div class="help-footnote">
                       <help-info :message="`--advertise-exit-node, --advertise-exit-node=false \r\n   ${t('app.advertiseExitNode')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-                <n-checkbox v-if="options.includes('--advertise-exit-node')" value="--exit-node-allow-lan-access" style="padding-left: 20px;">
-                  <div class="option-command">
-                    Allow LAN Access
-                    <div class="help-footnote">
-                      <help-info :message="`--exit-node-allow-lan-access, --exit-node-allow-lan-access=false \r\n   ${t('app.exitNodeAllowLanAccess')}`" />
                     </div>
                   </div>
                 </n-checkbox>
