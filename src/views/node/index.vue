@@ -18,7 +18,7 @@ import NodeActions from '@/views/node/nodeActions.vue'
 import { useAppStore } from '@/store'
 import { showBackfillipsDialog } from '@/views/node/backfillIpsDialog'
 import NodeSubNetDetails from '@/views/node/nodeSubNetDetails.vue'
-import ExitNodeDetails from "@/views/node/exitNodeDetails.vue";
+import ExitNodeDetails from '@/views/node/exitNodeDetails.vue'
 
 const dialog = useDialog()
 
