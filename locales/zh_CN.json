@@ -49,6 +49,7 @@
     "pleaseSelectUser": "请选择用户",
     "username": "用户名",
     "subnets": "子网",
+    "exit_node": "出口节点",
     "registerNodeRuleUsername": "请选择用户",
     "registerNodeRuleKey": "请输入mkey",
     "registerNodeSuccesses": "注册成功",

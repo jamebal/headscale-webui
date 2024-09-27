@@ -18,6 +18,11 @@ const props = defineProps(
       type: Boolean,
       default: false,
     },
+    exitNode: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
 )
 
@@ -166,6 +171,10 @@ const columns = computed((): DataTableColumns<RouteData> => {
   ]
   if (props.hideNodeName) {
     baseColumns.splice(1, 1)
+    if (props.exitNode) {
+      baseColumns.splice(0, 3)
+      baseColumns.splice(1, 1)
+    }
   }
   return baseColumns
 })

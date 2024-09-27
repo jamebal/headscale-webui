@@ -18,6 +18,7 @@ import NodeActions from '@/views/node/nodeActions.vue'
 import { useAppStore } from '@/store'
 import { showBackfillipsDialog } from '@/views/node/backfillIpsDialog'
 import NodeSubNetDetails from '@/views/node/nodeSubNetDetails.vue'
+import ExitNodeDetails from "@/views/node/exitNodeDetails.vue";
 
 const dialog = useDialog()
 
@@ -77,8 +78,10 @@ const columns = computed((): DataTableColumns<NodeData> => [
     key: 'name',
     render(rowData) {
       let routes = []
+      let exitNodes = []
       if (rowData.routes && rowData.routes.length > 0) {
         routes = rowData.routes.filter(route => route.isPrimary)
+        exitNodes = rowData.routes.filter(route => !route.isPrimary && route.prefix === '0.0.0.0/0')
       }
       return h(
         'div',
@@ -89,7 +92,12 @@ const columns = computed((): DataTableColumns<NodeData> => [
           h('span', { style: { color: 'var(--test-color-fringe)' } }, rowData.name),
           routes.length > 0
             ? h(NodeSubNetDetails, {
-              routes: rowData.routes,
+              routes,
+            })
+            : '',
+          exitNodes.length > 0
+            ? h(ExitNodeDetails, {
+              routes: exitNodes,
             })
             : '',
         ],
