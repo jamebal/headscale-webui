@@ -49,6 +49,7 @@
     "pleaseSelectUser": "Please select user",
     "username": "username",
     "subnets": "Subnets",
+    "exit_node": "Exit Node",
     "registerNodeRuleUsername": "Please select username",
     "registerNodeRuleKey": "Please enter mkey",
     "registerNodeSuccesses": "Register node successfully",
