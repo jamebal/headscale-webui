@@ -14,6 +14,10 @@ const props = defineProps(
       type: String,
       required: true,
     },
+    id: {
+      type: String,
+      required: true,
+    },
   },
 )
 
@@ -60,7 +64,7 @@ function handleSubmit() {
     if (errors)
       return
     isLoading.value = true
-    const result = await renameUser(props.user, formModal.value.name)
+    const result = await renameUser(props.id, formModal.value.name)
     if (!result || !result.isSuccess) {
       isLoading.value = false
       return

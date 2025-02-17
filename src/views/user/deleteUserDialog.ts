@@ -8,6 +8,7 @@ export function showDeleteUserDialog(
   dialog: DialogApiInjection,
   t: (key: string) => string,
   username: string,
+  id: string,
 ) {
   const d = dialog.warning({
     title: t('common.delete'),
@@ -16,7 +17,7 @@ export function showDeleteUserDialog(
     negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       d.loading = true
-      const result = await deleteUser(username)
+      const result = await deleteUser(id)
       if (!result || !result.isSuccess) {
         return
       }

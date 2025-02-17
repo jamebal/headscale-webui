@@ -30,6 +30,7 @@ const createUserModalVisible = ref(false)
 const renameUserModalVisible = ref(false)
 const preAuthKeysModalVisible = ref(false)
 const selectUsername = ref('')
+const selectUserId = ref('')
 
 const columns = computed((): DataTableColumns<User> => [
   {
@@ -66,6 +67,7 @@ const columns = computed((): DataTableColumns<User> => [
             type: 'default',
             onClick() {
               selectUsername.value = rowData.name
+              selectUserId.value = rowData.id
               preAuthKeysModalVisible.value = true
             },
           }, {
@@ -76,7 +78,7 @@ const columns = computed((): DataTableColumns<User> => [
             size: 'small',
             type: 'default',
             onClick() {
-              handelRenameUser(rowData.name)
+              handelRenameUser(rowData.id, rowData.name)
             },
           }, {
             default: () => t('common.rename'),
@@ -86,7 +88,7 @@ const columns = computed((): DataTableColumns<User> => [
             size: 'small',
             type: 'error',
             onClick() {
-              showDeleteUserDialog(dialog, t, rowData.name)
+              showDeleteUserDialog(dialog, t, rowData.name, rowData.id)
             },
           }, {
             default: () => t('common.delete'),
@@ -106,8 +108,9 @@ function renderUserList() {
   })
 }
 
-function handelRenameUser(name: string) {
+function handelRenameUser(id: string, name: string) {
   selectUsername.value = name
+  selectUserId.value = id
   renameUserModalVisible.value = true
 }
 
@@ -134,7 +137,7 @@ onMounted(() => {
       :data="userList"
     />
     <CreateUserModal v-model:show="createUserModalVisible" />
-    <RenameUserModal v-model:show="renameUserModalVisible" :user="selectUsername" />
+    <RenameUserModal :id="selectUserId" v-model:show="renameUserModalVisible" :user="selectUsername" />
     <PreAuthKeysModal v-model:show="preAuthKeysModalVisible" :user="selectUsername" />
   </n-space>
 </template>
