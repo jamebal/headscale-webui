@@ -105,8 +105,8 @@ function handleSubmit() {
       <n-form-item :label="t('app.username')" path="user">
         <n-select v-model:value="formModal.user" :options="userOptions" />
       </n-form-item>
-      <n-form-item label="mkey" path="key">
-        <n-input v-model:value="formModal.key" placeholder="mkey:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+      <n-form-item label="key" path="key">
+        <n-input v-model:value="formModal.key" placeholder="key:xxxxxxxxxxxxxxxxxxxxxxxx" />
       </n-form-item>
     </n-form>
     <template #action>
