@@ -51,7 +51,7 @@
     "subnets": "Subnets",
     "exit_node": "Exit Node",
     "registerNodeRuleUsername": "Please select username",
-    "registerNodeRuleKey": "Please enter mkey",
+    "registerNodeRuleKey": "Please enter key",
     "registerNodeSuccesses": "Register node successfully",
     "createdTime": "Created Time",
     "registerMethod": "Register Method",
