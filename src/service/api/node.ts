@@ -51,7 +51,7 @@ export function expireNode(nodeId: string) {
 }
 
 export function moveNode(user: string, nodeId: string) {
-  return request.Post<Service.ResponseResult<any>>(`/api/v1/node/${nodeId}/user?user=${user}`)
+  return request.Post<Service.ResponseResult<any>>(`/api/v1/node/${nodeId}/user`, { user })
 }
 
 export function setTagsOfNode(nodeId: string, data: { tags: string[] }) {
