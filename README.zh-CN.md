@@ -7,6 +7,7 @@
 请根据升级策略选择镜像标签：
 
 - `0.0.6-hs0.25` 是不可移动的组合标签，固定 WebUI 版本与 Headscale 兼容系列。
+- `0.0.6` 是该 WebUI Release 的不可移动项目版本标签。
 - `hs0.25` 是可移动别名，跟随仍兼容 Headscale `v0.25.x` 的最新 WebUI 版本。
 - `latest` 指向最新 WebUI 版本；`latest` 不保证兼容旧版 Headscale。
 

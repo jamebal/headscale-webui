@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  compareSemanticVersions,
   inspectImageManifest,
   promoteImageTags,
   validatePromotionArguments,
@@ -16,15 +17,29 @@ const revision = 'a'.repeat(40)
 const otherRevision = 'b'.repeat(40)
 const digestA = `sha256:${'1'.repeat(64)}`
 const digestB = `sha256:${'2'.repeat(64)}`
+const digestC = `sha256:${'3'.repeat(64)}`
+const digestD = `sha256:${'4'.repeat(64)}`
 
 function normalizeRef(ref) {
   return ref.startsWith('ghcr.io/') ? ref : `docker.io/${ref}`
 }
 
-function manifest(digest = digestA, manifestRevision = revision, platforms = ['amd64', 'arm64']) {
+function manifest(
+  digest = digestA,
+  manifestRevision = revision,
+  platforms = ['amd64', 'arm64'],
+  manifestVersion = projectVersion,
+  manifestCompatibility = compatibility,
+) {
   const annotations = manifestRevision === null
     ? {}
     : { 'org.opencontainers.image.revision': manifestRevision }
+  if (manifestVersion !== null) {
+    annotations['org.opencontainers.image.version'] = manifestVersion
+  }
+  if (manifestCompatibility !== null) {
+    annotations['io.github.jamebal.headscale-webui.headscale.compatibility'] = manifestCompatibility
+  }
   return {
     digest,
     annotations,
@@ -108,6 +123,52 @@ function seedExact(fake, image, value = manifest()) {
   fake.seed(ref(image, `${projectVersion}-hs${compatibility}`), value)
 }
 
+function releaseOptions(fake, {
+  version = projectVersion,
+  releaseCompatibility = compatibility,
+  releaseRevision = revision,
+} = {}) {
+  return options(fake, {
+    projectVersion: version,
+    headscaleCompatibility: releaseCompatibility,
+    revision: releaseRevision,
+  })
+}
+
+function seedReleaseStaging(fake, {
+  version = projectVersion,
+  releaseCompatibility = compatibility,
+  releaseRevision = revision,
+  digest = digestA,
+} = {}) {
+  const value = manifest(digest, releaseRevision, ['amd64', 'arm64'], version, releaseCompatibility)
+  fake.seed(ref(dockerImage, `build-${releaseRevision}`), value)
+  fake.seed(ref(ghcrImage, `build-${releaseRevision}`), value)
+}
+
+function seedReleaseStable(fake, {
+  version = projectVersion,
+  releaseCompatibility = compatibility,
+  releaseRevision = revision,
+  digest = digestA,
+} = {}) {
+  const value = manifest(digest, releaseRevision, ['amd64', 'arm64'], version, releaseCompatibility)
+  for (const image of [dockerImage, ghcrImage]) {
+    fake.seed(ref(image, `${version}-hs${releaseCompatibility}`), value)
+    fake.seed(ref(image, version), value)
+  }
+}
+
+function seedAliasPair(fake, tag, dockerValue, ghcrValue = dockerValue) {
+  fake.seed(ref(dockerImage, tag), dockerValue)
+  fake.seed(ref(ghcrImage, tag), ghcrValue)
+}
+
+function seedCurrentAliases(fake, value = manifest()) {
+  seedAliasPair(fake, `hs${compatibility}`, value)
+  seedAliasPair(fake, 'latest', value)
+}
+
 function assertAllTags(fake, expectedDigest = digestA) {
   for (const image of [dockerImage, ghcrImage]) {
     for (const tag of [projectVersion, `hs${compatibility}`, 'latest', `${projectVersion}-hs${compatibility}`]) {
@@ -116,6 +177,16 @@ function assertAllTags(fake, expectedDigest = digestA) {
   }
 }
 
+test('三段数字版本按 BigInt 逐段比较并拒绝非法值', () => {
+  assert.equal(compareSemanticVersions('0.0.6', '0.0.6'), 0)
+  assert.equal(compareSemanticVersions('0.0.10', '0.0.7'), 1)
+  assert.equal(compareSemanticVersions('999999999999999999999.0.0', '2.0.0'), 1)
+  assert.equal(compareSemanticVersions('0.1.0', '1.0.0'), -1)
+  for (const invalidVersion of ['v0.0.6', '0.0', '0.0.6-beta']) {
+    assert.throws(() => compareSemanticVersions(invalidVersion, projectVersion), /三段数字版本/)
+  }
+})
+
 test('首次发布先创建 exact 再创建 aliases 且所有 source 固定 digest', () => {
   const fake = new FakeDocker()
   seedStaging(fake)
@@ -123,10 +194,10 @@ test('首次发布先创建 exact 再创建 aliases 且所有 source 固定 dige
   promoteImageTags(options(fake))
 
   const creates = fake.calls.filter(args => args[2] === 'create')
-  assert.equal(creates.length, 4)
+  assert.equal(creates.length, 8)
   assert.deepEqual(creates[0].slice(3, 5), ['--tag', ref(dockerImage, `${projectVersion}-hs${compatibility}`)])
   assert.deepEqual(creates[1].slice(3, 5), ['--tag', ref(ghcrImage, `${projectVersion}-hs${compatibility}`)])
-  assert.ok(creates.slice(2).every(args => args.filter(value => value === '--tag').length === 3))
+  assert.ok(creates.every(args => args.filter(value => value === '--tag').length === 1))
   assert.ok(creates.every(args => /@sha256:[a-f\d]{64}$/i.test(args.at(-1))))
   assert.ok(fake.calls.some(args => args.join('\0') === [
     'buildx',
@@ -148,7 +219,7 @@ test('同 revision 完整重跑不移动 exact', () => {
   promoteImageTags(options(fake))
 
   const creates = fake.calls.filter(args => args[2] === 'create')
-  assert.equal(creates.length, 2)
+  assert.equal(creates.length, 0)
   assert.ok(creates.every(args => !args.includes(ref(dockerImage, `${projectVersion}-hs${compatibility}`))))
   assert.ok(creates.every(args => !args.includes(ref(ghcrImage, `${projectVersion}-hs${compatibility}`))))
   assertAllTags(fake)
@@ -177,8 +248,9 @@ test('aliases 部分缺失时可恢复为完整标签集合', () => {
   seedExact(fake, ghcrImage)
   fake.seed(ref(dockerImage, projectVersion))
   fake.seed(ref(dockerImage, `hs${compatibility}`))
-  fake.seed(ref(dockerImage, 'latest'), manifest(digestB))
-  fake.seed(ref(ghcrImage, `hs${compatibility}`), manifest(digestB))
+  const lowerAlias = manifest(digestB, otherRevision, ['amd64', 'arm64'], '0.0.5', compatibility)
+  fake.seed(ref(dockerImage, 'latest'), lowerAlias)
+  fake.seed(ref(ghcrImage, `hs${compatibility}`), lowerAlias)
   fake.seed(ref(ghcrImage, 'latest'))
 
   promoteImageTags(options(fake))
@@ -203,9 +275,61 @@ test('拒绝缺少 amd64 或 arm64 的 canonical manifest', () => {
 })
 
 test('拒绝 digest 格式错误的 canonical manifest', () => {
+  for (const invalidDigest of ['sha256:invalid', [digestA]]) {
+    const fake = new FakeDocker()
+    seedExact(fake, dockerImage, manifest(invalidDigest))
+    assert.throws(() => promoteImageTags(options(fake)), /digest.*sha256/)
+  }
+})
+
+test('拒绝 platform 字段使用可隐式字符串化的数组', () => {
   const fake = new FakeDocker()
-  seedExact(fake, dockerImage, manifest('sha256:invalid'))
-  assert.throws(() => promoteImageTags(options(fake)), /digest.*sha256/)
+  seedExact(fake, dockerImage, manifest(digestA, revision, [['amd64'], 'arm64']))
+  assert.throws(() => promoteImageTags(options(fake)), /linux\/amd64/)
+})
+
+test('拒绝 canonical manifest 的版本或兼容 annotation 缺失与不匹配', () => {
+  for (const value of [
+    manifest(digestA, revision, ['amd64', 'arm64'], null, compatibility),
+    manifest(digestA, revision, ['amd64', 'arm64'], projectVersion, null),
+    manifest(digestA, revision, ['amd64', 'arm64'], '0.0.7', compatibility),
+    manifest(digestA, revision, ['amd64', 'arm64'], projectVersion, '0.29'),
+  ]) {
+    const fake = new FakeDocker()
+    seedExact(fake, dockerImage, value)
+    assert.throws(() => promoteImageTags(options(fake)), /版本|兼容/)
+  }
+})
+
+test('project 已存在且等于 canonical 时不重写', () => {
+  const fake = new FakeDocker()
+  seedReleaseStable(fake)
+  seedCurrentAliases(fake)
+
+  promoteImageTags(options(fake))
+
+  const projectCreates = fake.calls.filter(args => args[2] === 'create' && (
+    args.includes(ref(dockerImage, projectVersion)) || args.includes(ref(ghcrImage, projectVersion))
+  ))
+  assert.equal(projectCreates.length, 0)
+})
+
+test('project 缺失时逐仓库单独创建并立即复查', () => {
+  const fake = new FakeDocker()
+  seedExact(fake, dockerImage)
+  seedExact(fake, ghcrImage)
+  seedCurrentAliases(fake)
+
+  promoteImageTags(options(fake))
+
+  for (const image of [dockerImage, ghcrImage]) {
+    const projectRef = ref(image, projectVersion)
+    const createIndex = fake.calls.findIndex(args => args[2] === 'create' && args.includes(projectRef))
+    assert.notEqual(createIndex, -1)
+    assert.equal(fake.calls[createIndex].filter(value => value === '--tag').length, 1)
+    const inspectIndex = fake.calls.findIndex((args, index) => index > createIndex && args[2] === 'inspect' && args[3] === projectRef)
+    assert.ok(inspectIndex > createIndex)
+  }
 })
 
 test('拒绝 existing project 与 canonical digest 冲突', () => {
@@ -234,6 +358,157 @@ test('拒绝两侧 staging digest 冲突', () => {
   const fake = new FakeDocker()
   seedStaging(fake, digestA, digestB)
   assert.throws(() => promoteImageTags(options(fake)), /staging.*digest.*冲突/)
+})
+
+test('同兼容系列发布较新版本后重跑旧版本不会回滚 hs 和 latest', () => {
+  const fake = new FakeDocker()
+  seedReleaseStaging(fake)
+  promoteImageTags(releaseOptions(fake))
+  seedReleaseStaging(fake, {
+    version: '0.0.7',
+    releaseRevision: otherRevision,
+    digest: digestB,
+  })
+  promoteImageTags(releaseOptions(fake, { version: '0.0.7', releaseRevision: otherRevision }))
+
+  promoteImageTags(releaseOptions(fake))
+
+  for (const image of [dockerImage, ghcrImage]) {
+    for (const tag of [`hs${compatibility}`, 'latest']) {
+      const value = fake.tags.get(ref(image, tag))
+      assert.equal(value.digest, digestB)
+      assert.equal(value.annotations['org.opencontainers.image.version'], '0.0.7')
+    }
+  }
+})
+
+test('跨兼容系列较新发布后重跑旧版本只保留旧 hs 且不回滚 latest', () => {
+  const fake = new FakeDocker()
+  seedReleaseStaging(fake)
+  promoteImageTags(releaseOptions(fake))
+  seedReleaseStaging(fake, {
+    version: '0.1.0',
+    releaseCompatibility: '0.29',
+    releaseRevision: otherRevision,
+    digest: digestB,
+  })
+  promoteImageTags(releaseOptions(fake, {
+    version: '0.1.0',
+    releaseCompatibility: '0.29',
+    releaseRevision: otherRevision,
+  }))
+
+  promoteImageTags(releaseOptions(fake))
+
+  for (const image of [dockerImage, ghcrImage]) {
+    assert.equal(fake.tags.get(ref(image, `hs${compatibility}`)).digest, digestA)
+    assert.equal(fake.tags.get(ref(image, 'latest')).digest, digestB)
+  }
+})
+
+test('较新发布仅完成单侧 alias 时旧发布失败且较新发布可补齐', () => {
+  const fake = new FakeDocker()
+  seedReleaseStable(fake)
+  seedReleaseStable(fake, {
+    version: '0.0.7',
+    releaseRevision: otherRevision,
+    digest: digestB,
+  })
+  const oldValue = manifest()
+  const newValue = manifest(digestB, otherRevision, ['amd64', 'arm64'], '0.0.7', compatibility)
+  seedAliasPair(fake, `hs${compatibility}`, newValue, oldValue)
+  seedAliasPair(fake, 'latest', newValue, oldValue)
+
+  assert.throws(() => promoteImageTags(releaseOptions(fake)), /请重跑对应的较新发布/)
+  promoteImageTags(releaseOptions(fake, { version: '0.0.7', releaseRevision: otherRevision }))
+
+  for (const image of [dockerImage, ghcrImage]) {
+    assert.equal(fake.tags.get(ref(image, `hs${compatibility}`)).digest, digestB)
+    assert.equal(fake.tags.get(ref(image, 'latest')).digest, digestB)
+  }
+})
+
+test('相同 alias 版本但 digest 不同，以及 hs compatibility 不匹配时失败', () => {
+  const fakeDigestConflict = new FakeDocker()
+  seedReleaseStable(fakeDigestConflict)
+  seedAliasPair(fakeDigestConflict, `hs${compatibility}`, manifest(), manifest(digestB))
+  seedAliasPair(fakeDigestConflict, 'latest', manifest())
+  assert.throws(() => promoteImageTags(options(fakeDigestConflict)), /digest|canonical/)
+
+  const fakeCompatibilityConflict = new FakeDocker()
+  seedReleaseStable(fakeCompatibilityConflict)
+  const wrongCompatibility = manifest(digestB, otherRevision, ['amd64', 'arm64'], '0.0.7', '0.29')
+  seedAliasPair(fakeCompatibilityConflict, `hs${compatibility}`, wrongCompatibility)
+  assert.throws(() => promoteImageTags(options(fakeCompatibilityConflict)), /兼容/)
+})
+
+test('higher alias 双侧 version 或 digest 不一致时 fail-closed', () => {
+  for (const [dockerValue, ghcrValue] of [
+    [
+      manifest(digestB, otherRevision, ['amd64', 'arm64'], '0.0.7', compatibility),
+      manifest(digestC, revision, ['amd64', 'arm64'], '0.0.8', compatibility),
+    ],
+    [
+      manifest(digestB, otherRevision, ['amd64', 'arm64'], '0.0.7', compatibility),
+      manifest(digestC, otherRevision, ['amd64', 'arm64'], '0.0.7', compatibility),
+    ],
+  ]) {
+    const fake = new FakeDocker()
+    seedReleaseStable(fake)
+    seedAliasPair(fake, `hs${compatibility}`, dockerValue, ghcrValue)
+    assert.throws(() => promoteImageTags(options(fake)), /请重跑对应的较新发布/)
+  }
+})
+
+test('alias 的 version、compatibility 与 revision annotation 必须格式合法', () => {
+  for (const invalidAlias of [
+    manifest(digestB, otherRevision, ['amd64', 'arm64'], 'v0.0.7', compatibility),
+    manifest(digestB, otherRevision, ['amd64', 'arm64'], '0.0.7', '0.25.0'),
+    manifest(digestB, 'bad-revision', ['amd64', 'arm64'], '0.0.7', compatibility),
+  ]) {
+    const fake = new FakeDocker()
+    seedReleaseStable(fake)
+    seedAliasPair(fake, `hs${compatibility}`, invalidAlias)
+    assert.throws(() => promoteImageTags(options(fake)), /annotation/)
+  }
+})
+
+test('alias metadata 必须是字符串而不是可隐式字符串化的数组', () => {
+  for (const [annotation, value] of [
+    ['org.opencontainers.image.revision', [otherRevision]],
+    ['org.opencontainers.image.version', ['0.0.7']],
+    ['io.github.jamebal.headscale-webui.headscale.compatibility', [compatibility]],
+  ]) {
+    const fake = new FakeDocker()
+    seedReleaseStable(fake)
+    seedCurrentAliases(fake)
+    const invalidLatest = manifest()
+    invalidLatest.annotations[annotation] = value
+    seedAliasPair(fake, 'latest', invalidLatest)
+    assert.throws(() => promoteImageTags(options(fake)), /annotation/)
+  }
+})
+
+test('0.0.6 可迁移 legacy aliases，而后续版本遇到 legacy 必须失败', () => {
+  const legacyValue = manifest(digestD, otherRevision, ['amd64', 'arm64'], null, null)
+  const migrationFake = new FakeDocker()
+  seedReleaseStable(migrationFake)
+  seedAliasPair(migrationFake, `hs${compatibility}`, legacyValue)
+  seedAliasPair(migrationFake, 'latest', legacyValue)
+  promoteImageTags(options(migrationFake))
+  assert.equal(migrationFake.tags.get(ref(dockerImage, 'latest')).digest, digestA)
+
+  const futureFake = new FakeDocker()
+  seedReleaseStable(futureFake, {
+    version: '0.0.7',
+    releaseRevision: otherRevision,
+    digest: digestB,
+  })
+  seedAliasPair(futureFake, `hs${compatibility}`, legacyValue)
+  assert.throws(
+    () => promoteImageTags(releaseOptions(futureFake, { version: '0.0.7', releaseRevision: otherRevision })),
+    /annotation|版本|兼容/,
+  )
 })
 
 test('仅把规范化精确 not found 和 ref-bound manifest unknown 视为缺失', () => {
@@ -317,7 +592,7 @@ test('post verification 发现 alias digest 不一致时失败', () => {
     }
     return result
   }
-  assert.throws(() => promoteImageTags(options(fake, { runDocker: runner })), /发布后校验失败/)
+  assert.throws(() => promoteImageTags(options(fake, { runDocker: runner })), /创建后校验失败|发布后校验失败/)
 })
 
 test('CLI 参数严格校验 image、版本、兼容版本和 revision', () => {

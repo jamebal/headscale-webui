@@ -45,13 +45,15 @@ ghcr.io/<owner>/headscale-webui:build-${GITHUB_SHA}
 - `org.opencontainers.image.version=0.0.6`
 - `io.github.jamebal.headscale-webui.headscale.compatibility=0.25`
 - `org.opencontainers.image.revision=${GITHUB_SHA}`
-- index annotation `org.opencontainers.image.revision=${GITHUB_SHA}`
+- index annotations 同时包含上述 version、compatibility 与 revision，确保仅检查多架构 index 就能获得完整发布身份。
 
 staging 构建成功后，`scripts/promote-image-tags.mjs` 一次协调 Docker Hub 与 GHCR，将经过校验的 digest 提升为正式标签。
 
 ## 并发与 fail-closed
 
-Workflow 使用固定 concurrency group `headscale-webui-release`，且不取消正在执行的发布。这样同一时间最多只有一个正式 promotion 修改 aliases。
+Workflow 使用固定 concurrency group `headscale-webui-release`，且不取消正在执行的发布。这样同一 repository 的 Actions 运行中，同一时间最多只有一个正式 promotion 修改 aliases。
+
+Workflow concurrency 不能阻止 registry 外部写入或另一个 repository 的发布。生产 registry 必须对 project 标签启用 immutable tag policy，并把正式标签写权限限制为单一发布者；这是抵御 inspect 与 create 之间 TOCTOU 竞争的最终硬保护。
 
 promotion 通过以下命令读取 manifest：
 
@@ -75,6 +77,8 @@ Docker Hub 的短 image 必须先规范化为 `docker.io/...`。401、403、429�
 
 - digest 是完整 `sha256` 格式。
 - index revision annotation 等于本次 Git SHA。
+- index version annotation 等于本次 WebUI 三段版本。
+- index compatibility annotation 等于本次 Headscale 两段兼容系列。
 - manifest 至少包含 `linux/amd64` 与 `linux/arm64`。
 - 可包含额外的 `unknown/unknown` attestation manifest。
 
@@ -102,11 +106,21 @@ Docker Hub 的短 image 必须先规范化为 `docker.io/...`。401、403、429�
 
 exact 必须先落盘并重新校验。只有两侧 exact revision、平台和 digest 完全一致后，才能处理 aliases。
 
-### 提升 aliases
+### 建立不可移动 project 标签
 
-每个 registry 分别从自身 `exact-image@canonicalDigest` 创建 project、`hs0.25` 与 `latest`。exact 不包含在 alias create 中，因此同 revision 重跑不会移动 exact。project 不存在或已经等于 canonical 才能继续；`hs0.25` 与 `latest` 允许移动到本次 canonical。
+exact 稳定后，promotion 必须再次 inspect 两侧 project 标签，以缩短首次预检后的竞争窗口。project 已存在且 digest 等于 canonical 时不执行 create；缺失时只以本 registry 的 `exact-image@canonicalDigest` 单独创建一次，并立即重新 inspect；digest 冲突时 fail-closed。project 永远不能与可移动 aliases 合并到同一条 create 命令。
 
-promotion 最后重新 inspect 两个 registry 的 exact、project、兼容标签和 latest。八个标签必须都等于 canonical digest，且 revision 与平台仍正确。create 或 post verification 的任何错误都会让发布失败；部分 aliases 成功后可通过同 revision 重跑补齐。
+### 单调提升 aliases
+
+promotion 把 Docker Hub 与 GHCR 上的同名 `hs0.25` 或 `latest` 作为一对联合检查。alias 必须包含合法的三段 version、两段 compatibility、40 位十六进制 revision、完整 digest 与双平台；`hs0.25` 的 compatibility 还必须等于目标兼容系列。版本使用逐段 `BigInt` 比较，避免数字精度和字典序问题。
+
+- 两侧均不高于当前版本时，当前版本必须指向 canonical；较低、缺失或允许迁移的 legacy 侧才会分别更新。
+- 任一侧高于当前版本时，只有两侧 version 与 digest 完全一致才可安全跳过；否则 fail-closed，并提示重跑对应的较新发布。
+- 更新后，两侧必须具有相同 version 与 digest，且 version 不低于当前版本；等于当前版本时 digest 必须等于 canonical。
+
+为迁移历史标签，仅 `0.0.6` 发布允许把同时缺少 version 与 compatibility 的 alias 视作 legacy 并重建。后续版本没有绕过参数，遇到 legacy 或只有单个 annotation 缺失时必须失败。
+
+promotion 最后重新 inspect 两个 registry 的 exact、project、兼容标签和 latest。exact 与 project 必须等于 canonical；两组 alias 必须分别满足上述双仓库一致性与单调性约束。create 或 post verification 的任何错误都会让发布失败；当前发布的单侧 alias 成功后，可通过同版本重跑补齐。
 
 ## 测试镜像
 
@@ -117,9 +131,10 @@ promotion 最后重新 inspect 两个 registry 的 exact、project、兼容标�
 1. 本地版本入口输出 `PROJECT_VERSION=0.0.6` 与 `HEADSCALE_COMPATIBILITY=0.25`。
 2. promotion 单测只使用注入的 fake Docker runner，不访问 registry。
 3. 首次发布、同 revision 重跑、单侧 exact 恢复和 aliases 部分恢复均通过。
-4. revision、平台或 digest 冲突，以及认证、限流和网络错误均 fail-closed。
-5. Workflow 只构建两个 staging 标签，并在其后调用双仓库 promotion CLI。
-6. 最终 Docker Hub 与 GHCR 均包含 `0.0.6-hs0.25`、`0.0.6`、`hs0.25`、`latest`。
+4. 旧发布重跑不能回滚较新的 `hs*` 或 `latest`；较新 alias 两侧不一致时必须提示重跑较新发布。
+5. revision、version、compatibility、平台或 digest 冲突，以及认证、限流和网络错误均 fail-closed。
+6. Workflow 只构建两个 staging 标签，并在其后调用双仓库 promotion CLI。
+7. 最终 Docker Hub 与 GHCR 均包含 `0.0.6-hs0.25`、`0.0.6`、`hs0.25`、`latest`。
 
 ## 非目标
 

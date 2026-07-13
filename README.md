@@ -6,6 +6,7 @@ Supported Headscale series: Headscale v0.25.x.
 Choose an image tag based on your upgrade policy:
 
 - `0.0.6-hs0.25` is an immutable tag that pins a fixed WebUI and Headscale compatibility combination.
+- `0.0.6` is the immutable project tag for this WebUI release.
 - `hs0.25` is a movable alias that tracks the latest WebUI release compatible with Headscale v0.25.x.
 - `latest` tracks the latest WebUI release. `latest` does not guarantee compatibility with older Headscale versions.
 

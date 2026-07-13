@@ -4,7 +4,7 @@
 
 **目标：** 让 Docker Hub 和 GHCR 的正式镜像同时携带 WebUI 版本与 Headscale 次版本兼容标签，并在未来升级到 `v0.29.x` 后继续保留可拉取的 `v0.25.x` 兼容镜像。
 
-**架构：** `package.json` 保存 WebUI 版本和 Headscale 兼容系列，`scripts/release-metadata.mjs` 输出 GitHub Actions 环境变量。正式 Workflow 先向两个 registry 推送 commit staging tags，再由 `scripts/promote-image-tags.mjs` 以 digest-pinned source 建立 canonical exact 和 aliases；固定 concurrency、fail-closed inspect 与 post verification 共同保证双仓库发布可恢复且不会移动 exact/project。
+**架构：** `package.json` 保存 WebUI 版本和 Headscale 兼容系列，`scripts/release-metadata.mjs` 输出 GitHub Actions 环境变量。正式 Workflow 先向两个 registry 推送 commit staging tags，再由 `scripts/promote-image-tags.mjs` 以 digest-pinned source 建立 canonical exact、不可移动 project 与单调 aliases；固定 concurrency、双仓库联合检查、fail-closed inspect 与 post verification 共同保证发布可恢复。registry 的 immutable project tag policy 与单一写入者权限是抵御外部 TOCTOU 竞争的最终硬保护。
 
 **技术栈：** Node.js 22、Node.js Test Runner、GitHub Actions、Docker Buildx、Docker Hub、GHCR、Markdown
 

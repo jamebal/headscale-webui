@@ -67,15 +67,20 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
           annotations: |
             index:org.opencontainers.image.revision=${{ github.sha }}
+            index:org.opencontainers.image.version=${{ env.PROJECT_VERSION }}
+            index:io.github.jamebal.headscale-webui.headscale.compatibility=${{ env.HEADSCALE_COMPATIBILITY }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
 
       - name: 提升正式镜像标签
+        env:
+          DOCKER_IMAGE: jmal/headscale-webui
+          GHCR_IMAGE: ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui
         run: >-
           node scripts/promote-image-tags.mjs
-          jmal/headscale-webui
-          ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui
+          "$DOCKER_IMAGE"
+          "$GHCR_IMAGE"
           "$PROJECT_VERSION"
           "$HEADSCALE_COMPATIBILITY"
           "${{ github.sha }}"

@@ -67,6 +67,8 @@ test('正式 Workflow 构建步骤写入 revision metadata 和 index annotation'
   assert.ok(step.includes([
     '          annotations: |',
     '            index:org.opencontainers.image.revision=${{ github.sha }}',
+    '            index:org.opencontainers.image.version=${{ env.PROJECT_VERSION }}',
+    '            index:io.github.jamebal.headscale-webui.headscale.compatibility=${{ env.HEADSCALE_COMPATIBILITY }}',
   ].join('\n')))
   assert.ok(step.includes('platforms: linux/amd64,linux/arm64'))
 })
@@ -76,13 +78,19 @@ test('正式 Workflow 在 staging 构建后调用双仓库 promotion CLI', () =>
   const promotionStep = workflowStep(buildWorkflow, '提升正式镜像标签')
   assert.ok(buildWorkflow.indexOf(buildStep) < buildWorkflow.indexOf(promotionStep))
   assert.ok(promotionStep.includes([
+    '        env:',
+    '          DOCKER_IMAGE: jmal/headscale-webui',
+    '          GHCR_IMAGE: ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui',
+  ].join('\n')))
+  assert.ok(promotionStep.includes([
     '          node scripts/promote-image-tags.mjs',
-    '          jmal/headscale-webui',
-    '          ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui',
+    '          "$DOCKER_IMAGE"',
+    '          "$GHCR_IMAGE"',
     '          "$PROJECT_VERSION"',
     '          "$HEADSCALE_COMPATIBILITY"',
     '          "${{ github.sha }}"',
   ].join('\n')))
+  assert.ok(!promotionStep.includes('node scripts/promote-image-tags.mjs\n          jmal/headscale-webui'))
   assert.ok(!buildWorkflow.includes('docker manifest inspect'))
 })
 

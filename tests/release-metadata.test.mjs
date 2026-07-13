@@ -1,11 +1,24 @@
 /* eslint-disable test/no-import-node-test -- 此文件必须使用 Node.js 内置测试运行器 */
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 import {
   formatGitHubEnvironment,
+  readReleaseMetadata,
   validateReleaseMetadata,
 } from '../scripts/release-metadata.mjs'
+
+test('真实 package 与 lockfile 发布版本一致', async () => {
+  const metadata = readReleaseMetadata()
+  const packageLock = JSON.parse(await readFile(new URL('../package-lock.json', import.meta.url), 'utf8'))
+  assert.deepEqual(metadata, {
+    projectVersion: '0.0.6',
+    headscaleCompatibility: '0.25',
+  })
+  assert.equal(packageLock.version, metadata.projectVersion)
+  assert.equal(packageLock.packages[''].version, metadata.projectVersion)
+})
 
 test('校验有效的发布版本信息', () => {
   assert.deepEqual(
