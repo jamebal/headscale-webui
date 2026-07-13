@@ -4,62 +4,82 @@ on:
   workflow_dispatch:
   release:
     types: [published]
-    tags: [v*]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: 检出代码仓库
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20.14.0
+      - name: 配置 Node.js 20.14.0
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install pnpm
+      - name: 验证发布版本信息
+        run: node scripts/release-metadata.mjs >> "$GITHUB_ENV"
+
+      - name: 安装 pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9.6.0
 
-      - name: Install dependencies
+      - name: 安装依赖
         run: pnpm install
 
-      - name: Build
+      - name: 构建生产版本
         run: pnpm run build:prod
 
-      - name: Extract project version from package.json
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Set up Docker Buildx
+      - name: 配置 Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: 登录 Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Login to GitHub Container Registry
+      - name: 登录 GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: 验证精确镜像标签未被占用
+        run: |
+          exact_tag="${PROJECT_VERSION}-hs${HEADSCALE_COMPATIBILITY}"
+          images=(
+            "jmal/headscale-webui"
+            "ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui"
+          )
+          for image in "${images[@]}"; do
+            if docker manifest inspect "${image}:${exact_tag}" >/dev/null 2>&1; then
+              echo "::error::精确镜像标签已存在：${image}:${exact_tag}，请提升 WebUI 版本后重新发布"
+              exit 1
+            fi
+          done
+
+      - name: 构建并推送 Docker 镜像
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            jmal/headscale-webui:${{ env.PROJECT_VERSION }},jmal/headscale-webui:latest
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }},ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:latest
+            jmal/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}
+            jmal/headscale-webui:${{ env.PROJECT_VERSION }}
+            jmal/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}
+            jmal/headscale-webui:latest
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:latest
+          labels: |
+            org.opencontainers.image.version=${{ env.PROJECT_VERSION }}
+            io.github.jamebal.headscale-webui.headscale.compatibility=${{ env.HEADSCALE_COMPATIBILITY }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
