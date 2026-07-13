@@ -61,6 +61,11 @@ test('正式 Workflow 写入版本 labels 并保留双架构构建', () => {
 })
 
 test('正式 Workflow 阻止覆盖精确镜像标签', () => {
+  assert.ok(buildWorkflow.includes([
+    '      - name: 检查精确镜像标签未被占用',
+    '        shell: bash',
+    '        run: |',
+  ].join('\n')))
   assert.ok(buildWorkflow.includes('docker manifest inspect'))
   assert.ok(buildWorkflow.includes('精确镜像标签已存在'))
 })

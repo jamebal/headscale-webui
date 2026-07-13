@@ -48,7 +48,8 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: 验证精确镜像标签未被占用
+      - name: 检查精确镜像标签未被占用
+        shell: bash
         run: |
           exact_tag="${PROJECT_VERSION}-hs${HEADSCALE_COMPATIBILITY}"
           images=(
