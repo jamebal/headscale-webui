@@ -59,10 +59,13 @@ promotion 通过以下命令读取 manifest：
 docker buildx imagetools inspect REF --format '{{json .Manifest}}'
 ```
 
-只有两种 registry 响应可判定标签不存在：
+只有 stdout 为空，并且 trim 后的 stderr 精确等于以下三种与规范化完整 ref 绑定的标准格式之一，才可判定标签不存在：
 
-1. stderr 精确等于规范化完整 ref 的 `ERROR: ...: not found`。
-2. stderr 同时包含该规范化完整 ref 与大小写不敏感的 `manifest unknown`。
+1. `ERROR: <normalized-full-ref>: not found`。
+2. `ERROR: <normalized-full-ref>: manifest unknown`。
+3. `ERROR: <normalized-full-ref>: manifest unknown: manifest unknown`。
+
+其他任何 stdout 或 stderr 输出都必须 fail-closed。
 
 Docker Hub 的短 image 必须先规范化为 `docker.io/...`。401、403、429、DNS、TLS、credential helper、Docker executable 缺失和任意无法绑定 ref 的裸 `not found` 都属于检查失败，promotion 必须立即停止。
 
