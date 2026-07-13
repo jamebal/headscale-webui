@@ -32,6 +32,23 @@ test('拒绝无效的项目版本', () => {
   }
 })
 
+test('用项目版本领域错误拒绝 null 配置', () => {
+  assert.throws(
+    () => validateReleaseMetadata(null),
+    /package.json version 必须是三段数字版本/,
+  )
+})
+
+test('拒绝数组类型的项目版本', () => {
+  assert.throws(
+    () => validateReleaseMetadata({
+      version: ['1.2.3'],
+      headscaleCompatibility: '0.25',
+    }),
+    /package.json version 必须是三段数字版本/,
+  )
+})
+
 test('拒绝无效的 Headscale 兼容版本', () => {
   for (const packageJson of [
     { version: '0.0.1' },
@@ -42,6 +59,16 @@ test('拒绝无效的 Headscale 兼容版本', () => {
       /package.json headscaleCompatibility 必须是两段数字版本/,
     )
   }
+})
+
+test('拒绝数组类型的 Headscale 兼容版本', () => {
+  assert.throws(
+    () => validateReleaseMetadata({
+      version: '0.0.1',
+      headscaleCompatibility: ['0.25'],
+    }),
+    /package.json headscaleCompatibility 必须是两段数字版本/,
+  )
 })
 
 test('格式化 GitHub Actions 环境变量', () => {

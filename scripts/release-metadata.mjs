@@ -4,17 +4,19 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 
 export function validateReleaseMetadata(packageJson) {
-  if (!/^\d+\.\d+\.\d+$/.test(packageJson.version)) {
+  const version = packageJson?.version
+  if (typeof version !== 'string' || !/^\d+\.\d+\.\d+$/.test(version)) {
     throw new Error('package.json version 必须是三段数字版本，例如 0.0.1')
   }
 
-  if (!/^\d+\.\d+$/.test(packageJson.headscaleCompatibility)) {
+  const headscaleCompatibility = packageJson?.headscaleCompatibility
+  if (typeof headscaleCompatibility !== 'string' || !/^\d+\.\d+$/.test(headscaleCompatibility)) {
     throw new Error('package.json headscaleCompatibility 必须是两段数字版本，例如 0.25')
   }
 
   return {
-    projectVersion: packageJson.version,
-    headscaleCompatibility: packageJson.headscaleCompatibility,
+    projectVersion: version,
+    headscaleCompatibility,
   }
 }
 
