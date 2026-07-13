@@ -6,8 +6,8 @@
 
 请根据升级策略选择镜像标签：
 
-- `0.0.6-hs0.25` 固定 WebUI 版本与 Headscale 兼容系列的组合。
-- `hs0.25` 指向仍兼容 Headscale `v0.25.x` 的最新 WebUI 版本。
+- `0.0.6-hs0.25` 是不可移动的组合标签，固定 WebUI 版本与 Headscale 兼容系列。
+- `hs0.25` 是可移动别名，跟随仍兼容 Headscale `v0.25.x` 的最新 WebUI 版本。
 - `latest` 指向最新 WebUI 版本；`latest` 不保证兼容旧版 Headscale。
 
 如需可复现部署，请固定使用 `0.0.6-hs0.25`；如需获取同一 Headscale 系列的兼容修复，请使用 `hs0.25`。升级 Headscale 前，请先确认所选镜像标签支持目标系列。
