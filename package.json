@@ -2,6 +2,7 @@
   "name": "headscale-webui",
   "type": "module",
   "version": "0.0.1",
+  "headscaleCompatibility": "0.25",
   "private": true,
   "description": "A Tailscale-compatible orchestration server web front-end for headscale",
   "author": {
@@ -35,6 +36,7 @@
     "lint": "eslint . && vue-tsc --noEmit",
     "lint:fix": "eslint . --fix",
     "lint:check": "npx @eslint/config-inspector",
+    "test:release": "node --test tests/release-*.test.mjs",
     "sizecheck": "npx vite-bundle-visualizer"
   },
   "dependencies": {
