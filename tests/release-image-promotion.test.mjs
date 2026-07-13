@@ -247,6 +247,26 @@ test('仅把规范化精确 not found 和 ref-bound manifest unknown 视为缺�
   }
 })
 
+test('stderr 表示缺失但 stdout 含危险状态时 fail-closed', () => {
+  const missingRef = ref(dockerImage, 'missing')
+  const stderr = `ERROR: ${normalizeRef(missingRef)}: not found`
+  for (const stdout of ['401 Unauthorized', '429 Too Many Requests', 'tls: handshake failure']) {
+    const runner = () => ({ status: 1, stdout, stderr })
+    assert.throws(() => inspectImageManifest(missingRef, runner), /检查镜像失败/)
+  }
+})
+
+test('目标 ref 与另一 ref 的 manifest unknown 分处不同行时 fail-closed', () => {
+  const checkedRef = ref(dockerImage, 'checked')
+  const otherRef = normalizeRef(ref(dockerImage, 'other'))
+  const stderr = [
+    `failed to inspect ${normalizeRef(checkedRef)}`,
+    `${otherRef}: manifest unknown`,
+  ].join('\n')
+  const runner = () => ({ status: 1, stdout: '', stderr })
+  assert.throws(() => inspectImageManifest(checkedRef, runner), /检查镜像失败/)
+})
+
 test('认证、限流、网络、TLS 和本地 Docker 错误全部 fail-closed', () => {
   const checkedRef = ref(dockerImage, 'checked')
   for (const stderr of [

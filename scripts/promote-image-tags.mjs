@@ -31,9 +31,19 @@ function commandError(result) {
   return [result.stderr, result.stdout].filter(Boolean).join('\n').trim() || 'Docker 命令未返回错误详情'
 }
 
-function isMissingImage(ref, stderr) {
+function isMissingImage(ref, stdout, stderr) {
+  if (stdout.trim()) {
+    return false
+  }
   const normalizedRef = normalizeImageRef(ref)
-  const message = stderr.trim()
+  const lines = stderr
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+  if (lines.length !== 1) {
+    return false
+  }
+  const [message] = lines
   if (failClosedErrorPattern.test(message)) {
     return false
   }
@@ -52,7 +62,7 @@ export function inspectImageManifest(ref, runDocker = defaultDockerRunner) {
   ])
 
   if (result.status !== 0) {
-    if (isMissingImage(ref, result.stderr ?? '')) {
+    if (isMissingImage(ref, result.stdout ?? '', result.stderr ?? '')) {
       return undefined
     }
     throw new Error(`检查镜像失败：${ref}：${commandError(result)}`)
