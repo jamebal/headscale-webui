@@ -76,7 +76,7 @@
     "pre-commit": "npm exec lint-staged"
   },
   "lint-staged": {
-    "*": "eslint --fix"
+    "*.{js,jsx,ts,tsx,vue,mjs,cjs}": "eslint --fix"
   },
   "volta": {
     "node": "22.23.1"

@@ -13,6 +13,7 @@
 ## 文件结构
 
 - 修改 `package.json`：增加 `headscaleCompatibility`、发布配置测试命令，并限制 `lint-staged` 只处理 ESLint 支持的源码文件。
+- 修改 `eslint.config.js`：忽略 `docs/superpowers/**` 中用于说明实施方案的示例代码块。
 - 创建 `scripts/release-metadata.mjs`：读取并校验两个版本字段，输出 Workflow 可写入 `$GITHUB_ENV` 的内容。
 - 创建 `tests/release-metadata.test.mjs`：覆盖版本格式、错误信息和环境变量输出。
 - 创建 `tests/release-workflows.test.mjs`：静态验证正式与测试 Workflow 的版本入口、正式标签、metadata 和精确标签保护。
@@ -27,6 +28,7 @@
 **文件：**
 
 - 修改：`package.json:78-80`
+- 修改：`eslint.config.js:5-11`
 
 - [ ] **步骤 1：运行失败断言，复现 Markdown 被 ESLint 处理的问题**
 
@@ -38,7 +40,15 @@ node -e "const p=require('./package.json'); if (p['lint-staged']['*']) throw new
 
 预期：命令失败并输出 `lint-staged 仍会把 Markdown 交给 ESLint`。
 
-- [ ] **步骤 2：将 ESLint 限定到受支持的源码扩展名**
+同时运行 ESLint 基线：
+
+```bash
+npm run lint
+```
+
+预期：命令失败，错误全部来自 `docs/superpowers/**` 下 Markdown 文档的示例代码块。
+
+- [ ] **步骤 2：修正 ESLint 基线与 staged 文件检查范围**
 
 把 `package.json` 中的配置修改为：
 
@@ -47,6 +57,14 @@ node -e "const p=require('./package.json'); if (p['lint-staged']['*']) throw new
   "*.{js,jsx,ts,tsx,vue,mjs,cjs}": "eslint --fix"
 }
 ```
+
+在 `eslint.config.js` 的 `antfu` 第一参数中增加：
+
+```js
+ignores: ['docs/superpowers/**'],
+```
+
+保留原有 TypeScript override，不关闭全局 Markdown 或 YAML 支持。
 
 - [ ] **步骤 3：重新运行配置断言**
 
@@ -68,11 +86,22 @@ npm exec lint-staged -- --diff HEAD
 
 预期：命令成功；Markdown 文件不会传给 `eslint --fix`。
 
-- [ ] **步骤 5：提交配置修正**
+- [ ] **步骤 5：验证修正后的 ESLint 与构建基线**
+
+运行：
 
 ```bash
-git add package.json
-git commit -m "fix: 限制 staged 源码检查范围"
+npm run lint
+npm run build:prod
+```
+
+预期：两个命令均成功。
+
+- [ ] **步骤 6：提交配置修正**
+
+```bash
+git add package.json eslint.config.js docs/superpowers/plans/2026-07-13-headscale-compatible-image-tags.md
+git commit -m "fix: 修正文档与 staged 文件检查范围"
 ```
 
 ### 任务 2：建立可测试的发布版本信息入口
