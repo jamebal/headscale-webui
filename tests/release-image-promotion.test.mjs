@@ -490,25 +490,45 @@ test('alias metadata 必须是字符串而不是可隐式字符串化的数组',
 })
 
 test('0.0.6 可迁移 legacy aliases，而后续版本遇到 legacy 必须失败', () => {
-  const legacyValue = manifest(digestD, otherRevision, ['amd64', 'arm64'], null, null)
+  const legacyValue = manifest(digestD, null, ['amd64', 'arm64'], null, null)
   const migrationFake = new FakeDocker()
   seedReleaseStable(migrationFake)
   seedAliasPair(migrationFake, `hs${compatibility}`, legacyValue)
   seedAliasPair(migrationFake, 'latest', legacyValue)
   promoteImageTags(options(migrationFake))
-  assert.equal(migrationFake.tags.get(ref(dockerImage, 'latest')).digest, digestA)
+  for (const image of [dockerImage, ghcrImage]) {
+    assert.equal(migrationFake.tags.get(ref(image, `hs${compatibility}`)).digest, digestA)
+    assert.equal(migrationFake.tags.get(ref(image, 'latest')).digest, digestA)
+  }
 
-  const futureFake = new FakeDocker()
-  seedReleaseStable(futureFake, {
-    version: '0.0.7',
-    releaseRevision: otherRevision,
-    digest: digestB,
-  })
-  seedAliasPair(futureFake, `hs${compatibility}`, legacyValue)
-  assert.throws(
-    () => promoteImageTags(releaseOptions(futureFake, { version: '0.0.7', releaseRevision: otherRevision })),
-    /annotation|版本|兼容/,
-  )
+  const revisionOnly = manifest(digestD, otherRevision, ['amd64', 'arm64'], null, null)
+  const versionOnly = manifest(digestD, otherRevision, ['amd64', 'arm64'], '0.0.6', null)
+  for (const historicalAlias of [legacyValue, revisionOnly, versionOnly]) {
+    const futureFake = new FakeDocker()
+    seedReleaseStable(futureFake, {
+      version: '0.0.7',
+      releaseRevision: otherRevision,
+      digest: digestB,
+    })
+    seedAliasPair(futureFake, `hs${compatibility}`, historicalAlias)
+    assert.throws(
+      () => promoteImageTags(releaseOptions(futureFake, { version: '0.0.7', releaseRevision: otherRevision })),
+      /annotation|版本|兼容/,
+    )
+  }
+})
+
+test('0.0.6 legacy migration 拒绝非法 revision 和 partial metadata', () => {
+  for (const historicalAlias of [
+    manifest(digestD, 'bad-revision', ['amd64', 'arm64'], null, null),
+    manifest(digestD, otherRevision, ['amd64', 'arm64'], null, compatibility),
+    manifest(digestD, otherRevision, ['amd64', 'arm64'], projectVersion, null),
+  ]) {
+    const fake = new FakeDocker()
+    seedReleaseStable(fake)
+    seedAliasPair(fake, `hs${compatibility}`, historicalAlias)
+    assert.throws(() => promoteImageTags(options(fake)), /annotation|版本|兼容/)
+  }
 })
 
 test('仅把规范化精确 not found 和 ref-bound manifest unknown 视为缺失', () => {

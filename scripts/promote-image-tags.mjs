@@ -135,13 +135,16 @@ export function compareSemanticVersions(left, right) {
 function validateAliasManifest(manifest, ref, currentVersion) {
   validateManifestStructure(manifest, ref)
   const aliasRevision = manifest.annotations?.[revisionAnnotation]
-  if (!matchesString(aliasRevision, revisionPattern)) {
-    throw new Error(`镜像别名 ${ref} 的 revision annotation 必须是 40 位 Git SHA`)
-  }
   const version = manifest.annotations?.[versionAnnotation]
   const compatibility = manifest.annotations?.[compatibilityAnnotation]
   if (version === undefined && compatibility === undefined && currentVersion === legacyAliasMigrationVersion) {
+    if (aliasRevision !== undefined && !matchesString(aliasRevision, revisionPattern)) {
+      throw new Error(`镜像别名 ${ref} 的 revision annotation 必须是 40 位 Git SHA`)
+    }
     return { ...manifest, legacy: true, version: undefined, compatibility: undefined }
+  }
+  if (!matchesString(aliasRevision, revisionPattern)) {
+    throw new Error(`镜像别名 ${ref} 的 revision annotation 必须是 40 位 Git SHA`)
   }
   if (!matchesString(version, projectVersionPattern)) {
     throw new Error(`镜像别名 ${ref} 的版本 annotation 必须是三段数字版本`)
