@@ -77,8 +77,8 @@ const columns = computed((): DataTableColumns<NodeData> => [
     title: t('app.name'),
     key: 'name',
     render(rowData) {
-      let routes = []
-      let exitNodes = []
+      let routes: RouteData[] = []
+      let exitNodes: RouteData[] = []
       if (rowData.routes && rowData.routes.length > 0) {
         routes = rowData.routes.filter(route => route.isPrimary)
         exitNodes = rowData.routes.filter(route => !route.isPrimary && route.prefix === '0.0.0.0/0')
@@ -92,13 +92,13 @@ const columns = computed((): DataTableColumns<NodeData> => [
           h('span', { style: { color: 'var(--test-color-fringe)' } }, rowData.name),
           routes.length > 0
             ? h(NodeSubNetDetails, {
-              routes,
-            })
+                routes,
+              })
             : '',
           exitNodes.length > 0
             ? h(ExitNodeDetails, {
-              routes: exitNodes,
-            })
+                routes: exitNodes,
+              })
             : '',
         ],
       )
