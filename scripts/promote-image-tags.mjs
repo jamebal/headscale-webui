@@ -9,7 +9,6 @@ const projectVersionPattern = /^\d+\.\d+\.\d+$/
 const compatibilityPattern = /^\d+\.\d+$/
 const revisionPattern = /^[a-f\d]{40}$/i
 const revisionAnnotation = 'org.opencontainers.image.revision'
-const failClosedErrorPattern = /\b(?:401|403|429)\b|unauthorized|forbidden|too many requests|no such host|name resolution|network is unreachable|connection (?:refused|reset|timed out)|\btls\b|certificate|credential|executable file not found/i
 
 function defaultDockerRunner(args) {
   const result = spawnSync('docker', args, { encoding: 'utf8' })
@@ -36,19 +35,11 @@ function isMissingImage(ref, stdout, stderr) {
     return false
   }
   const normalizedRef = normalizeImageRef(ref)
-  const lines = stderr
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean)
-  if (lines.length !== 1) {
-    return false
-  }
-  const [message] = lines
-  if (failClosedErrorPattern.test(message)) {
-    return false
-  }
-  return message === `ERROR: ${normalizedRef}: not found`
-    || (message.includes(normalizedRef) && /manifest unknown/i.test(message))
+  return [
+    `ERROR: ${normalizedRef}: not found`,
+    `ERROR: ${normalizedRef}: manifest unknown`,
+    `ERROR: ${normalizedRef}: manifest unknown: manifest unknown`,
+  ].includes(stderr.trim())
 }
 
 export function inspectImageManifest(ref, runDocker = defaultDockerRunner) {

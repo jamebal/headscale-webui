@@ -240,7 +240,8 @@ test('仅把规范化精确 not found 和 ref-bound manifest unknown 视为缺�
   const missingRef = ref(dockerImage, 'missing')
   for (const stderr of [
     `ERROR: ${normalizeRef(missingRef)}: not found`,
-    `failed to resolve ${normalizeRef(missingRef)}: MANIFEST UNKNOWN`,
+    `ERROR: ${normalizeRef(missingRef)}: manifest unknown`,
+    `ERROR: ${normalizeRef(missingRef)}: manifest unknown: manifest unknown`,
   ]) {
     const runner = () => ({ status: 1, stdout: '', stderr })
     assert.equal(inspectImageManifest(missingRef, runner), undefined)
@@ -265,6 +266,17 @@ test('目标 ref 与另一 ref 的 manifest unknown 分处不同行时 fail-clos
   ].join('\n')
   const runner = () => ({ status: 1, stdout: '', stderr })
   assert.throws(() => inspectImageManifest(checkedRef, runner), /检查镜像失败/)
+})
+
+test('网络与访问拒绝文字不能伪装成同一行 manifest unknown', () => {
+  const checkedRef = ref(dockerImage, 'checked')
+  for (const stderr of [
+    `dial tcp: lookup registry-1.docker.io: i/o timeout while resolving ${normalizeRef(checkedRef)}: manifest unknown`,
+    `access denied while resolving ${normalizeRef(checkedRef)}: manifest unknown`,
+  ]) {
+    const runner = () => ({ status: 1, stdout: '', stderr })
+    assert.throws(() => inspectImageManifest(checkedRef, runner), /检查镜像失败/)
+  }
 })
 
 test('认证、限流、网络、TLS 和本地 Docker 错误全部 fail-closed', () => {
