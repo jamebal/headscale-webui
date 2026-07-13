@@ -4,7 +4,7 @@
 
 **目标：** 让 Docker Hub 和 GHCR 的正式镜像同时携带 WebUI 版本与 Headscale 次版本兼容标签，并在未来升级到 `v0.29.x` 后继续保留可拉取的 `v0.25.x` 兼容镜像。
 
-**架构：** `package.json` 保存 WebUI 版本和 Headscale 兼容系列，`scripts/release-metadata.mjs` 负责读取、校验并输出 GitHub Actions 环境变量。两个正式 registry 使用同一组 Workflow 环境变量生成四类标签与一致的 OCI metadata；README 明确生产环境应固定兼容标签。
+**架构：** `package.json` 保存 WebUI 版本和 Headscale 兼容系列，`scripts/release-metadata.mjs` 输出 GitHub Actions 环境变量。正式 Workflow 先向两个 registry 推送 commit staging tags，再由 `scripts/promote-image-tags.mjs` 以 digest-pinned source 建立 canonical exact 和 aliases；固定 concurrency、fail-closed inspect 与 post verification 共同保证双仓库发布可恢复且不会移动 exact/project。
 
 **技术栈：** Node.js 22、Node.js Test Runner、GitHub Actions、Docker Buildx、Docker Hub、GHCR、Markdown
 
@@ -16,9 +16,11 @@
 - 修改 `eslint.config.js`：忽略 `docs/superpowers/**` 中用于说明实施方案的示例代码块。
 - 创建 `scripts/release-metadata.mjs`：读取并校验两个版本字段，输出 Workflow 可写入 `$GITHUB_ENV` 的内容。
 - 创建 `tests/release-metadata.test.mjs`：覆盖版本格式、错误信息和环境变量输出。
-- 创建 `tests/release-workflows.test.mjs`：静态验证正式与测试 Workflow 的版本入口、正式标签、metadata 和精确标签保护。
+- 创建 `scripts/promote-image-tags.mjs`：以 Docker Buildx inspect/create 协调双仓库 canonical 与 aliases。
+- 创建 `tests/release-image-promotion.test.mjs`：用 fake Docker runner 覆盖发布、恢复和 fail-closed 行为。
+- 创建 `tests/release-workflows.test.mjs`：静态验证正式 Workflow 的 staging、concurrency、metadata 与 promotion 入口。
 - 创建 `tests/release-docs.test.mjs`：验证中英文 README 的兼容说明和固定镜像标签保持一致。
-- 修改 `.github/workflows/build.yml`：读取兼容版本、保护精确标签并发布四类正式标签与 metadata。
+- 修改 `.github/workflows/build.yml`：读取兼容版本，只构建 staging tags，再运行可恢复 promotion。
 - 修改 `.github/workflows/test-build.yml`：复用版本校验，但继续只发布 `test`。
 - 修改 `README.md`：说明英文版兼容范围、标签语义和升级规则。
 - 修改 `README.zh-CN.md`：说明中文版兼容范围、标签语义和升级规则。
@@ -128,11 +130,11 @@ import {
 test('接受 WebUI 三段版本和 Headscale 两段兼容版本', () => {
   assert.deepEqual(
     validateReleaseMetadata({
-      version: '0.0.1',
+      version: '0.0.6',
       headscaleCompatibility: '0.25',
     }),
     {
-      projectVersion: '0.0.1',
+      projectVersion: '0.0.6',
       headscaleCompatibility: '0.25',
     },
   )
@@ -144,18 +146,18 @@ test('拒绝缺少或格式错误的 WebUI 版本', () => {
     /package.json version 必须是三段数字版本/,
   )
   assert.throws(
-    () => validateReleaseMetadata({ version: 'v0.0.1', headscaleCompatibility: '0.25' }),
+    () => validateReleaseMetadata({ version: 'v0.0.6', headscaleCompatibility: '0.25' }),
     /package.json version 必须是三段数字版本/,
   )
 })
 
 test('拒绝缺少或格式错误的 Headscale 兼容版本', () => {
   assert.throws(
-    () => validateReleaseMetadata({ version: '0.0.1' }),
+    () => validateReleaseMetadata({ version: '0.0.6' }),
     /package.json headscaleCompatibility 必须是两段数字版本/,
   )
   assert.throws(
-    () => validateReleaseMetadata({ version: '0.0.1', headscaleCompatibility: '0.25.0' }),
+    () => validateReleaseMetadata({ version: '0.0.6', headscaleCompatibility: '0.25.0' }),
     /package.json headscaleCompatibility 必须是两段数字版本/,
   )
 })
@@ -163,10 +165,10 @@ test('拒绝缺少或格式错误的 Headscale 兼容版本', () => {
 test('生成 GitHub Actions 环境变量', () => {
   assert.equal(
     formatGitHubEnvironment({
-      projectVersion: '0.0.1',
+      projectVersion: '0.0.6',
       headscaleCompatibility: '0.25',
     }),
-    'PROJECT_VERSION=0.0.1\nHEADSCALE_COMPATIBILITY=0.25',
+    'PROJECT_VERSION=0.0.6\nHEADSCALE_COMPATIBILITY=0.25',
   )
 })
 ```
@@ -192,7 +194,7 @@ import { pathToFileURL } from 'node:url'
 
 export function validateReleaseMetadata(packageJson) {
   if (!/^\d+\.\d+\.\d+$/.test(packageJson.version ?? '')) {
-    throw new Error('package.json version 必须是三段数字版本，例如 0.0.1')
+    throw new Error('package.json version 必须是三段数字版本，例如 0.0.6')
   }
 
   if (!/^\d+\.\d+$/.test(packageJson.headscaleCompatibility ?? '')) {
@@ -254,7 +256,7 @@ node scripts/release-metadata.mjs
 预期：四个单元测试全部通过，随后输出：
 
 ```text
-PROJECT_VERSION=0.0.1
+PROJECT_VERSION=0.0.6
 HEADSCALE_COMPATIBILITY=0.25
 ```
 
@@ -265,168 +267,83 @@ git add package.json scripts/release-metadata.mjs tests/release-metadata.test.mj
 git commit -m "build: 增加 Headscale 兼容版本元数据"
 ```
 
-### 任务 3：让两个 Workflow 使用兼容版本标签
+### 任务 3：建立可恢复的双仓库镜像发布
 
 **文件：**
 
-- 创建：`tests/release-workflows.test.mjs`
-- 修改：`.github/workflows/build.yml:1-68`
-- 修改：`.github/workflows/test-build.yml:1-66`
+- 创建：`scripts/promote-image-tags.mjs`
+- 创建：`tests/release-image-promotion.test.mjs`
+- 修改：`tests/release-workflows.test.mjs`
+- 修改：`.github/workflows/build.yml`
+- 修改：`.github/workflows/test-build.yml`
 
-- [ ] **步骤 1：编写 Workflow 配置失败测试**
+- [ ] **步骤 1：先编写 promotion 与 Workflow 失败测试**
 
-创建 `tests/release-workflows.test.mjs`：
+`tests/release-image-promotion.test.mjs` 使用注入的 fake Docker runner，模拟 `.Manifest` JSON，不调用网络或真实 Docker。至少覆盖首次发布、同 revision 重跑、单侧 exact 恢复、aliases 部分恢复、revision/平台/digest 冲突、project 保护、严格缺失识别、认证和网络错误、create 失败与 post verification 失败。
 
-```js
-import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import test from 'node:test'
+`tests/release-workflows.test.mjs` 必须把断言绑定到对应 YAML block，验证固定 concurrency、两个 commit staging tags、三个 labels、index annotation 和 promotion CLI；测试 Workflow 仍只允许两个 `test` 标签。
 
-const buildWorkflow = readFileSync(new URL('../.github/workflows/build.yml', import.meta.url), 'utf8')
-const testWorkflow = readFileSync(new URL('../.github/workflows/test-build.yml', import.meta.url), 'utf8')
-
-test('正式 Workflow 通过统一脚本读取版本信息', () => {
-  assert.match(buildWorkflow, /node scripts\/release-metadata\.mjs >> "\$GITHUB_ENV"/)
-  assert.doesNotMatch(buildWorkflow, /require\('\.\/package\.json'\)\.version/)
-})
-
-test('正式 Workflow 生成四类镜像标签', () => {
-  for (const tag of [
-    'jmal/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}',
-    'jmal/headscale-webui:${{ env.PROJECT_VERSION }}',
-    'jmal/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}',
-    'jmal/headscale-webui:latest',
-    'ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}',
-    'ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }}',
-    'ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}',
-    'ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:latest',
-  ]) {
-    assert.ok(buildWorkflow.includes(tag), `缺少正式镜像标签：${tag}`)
-  }
-})
-
-test('正式 Workflow 写入版本 metadata 并保护精确标签', () => {
-  assert.match(buildWorkflow, /org\.opencontainers\.image\.version=\$\{\{ env\.PROJECT_VERSION \}\}/)
-  assert.match(buildWorkflow, /io\.github\.jamebal\.headscale-webui\.headscale\.compatibility=\$\{\{ env\.HEADSCALE_COMPATIBILITY \}\}/)
-  assert.match(buildWorkflow, /docker manifest inspect/)
-  assert.match(buildWorkflow, /精确镜像标签已存在/)
-  assert.match(buildWorkflow, /platforms: linux\/amd64,linux\/arm64/)
-})
-
-test('测试 Workflow 校验版本但只推送 test 标签', () => {
-  assert.match(testWorkflow, /node scripts\/release-metadata\.mjs >> "\$GITHUB_ENV"/)
-  assert.match(testWorkflow, /jmal\/headscale-webui:test/)
-  assert.match(testWorkflow, /ghcr\.io\/\$\{\{ secrets\.GHCR_IO_USERNAME \}\}\/headscale-webui:test/)
-  assert.match(testWorkflow, /org\.opencontainers\.image\.version=\$\{\{ env\.PROJECT_VERSION \}\}/)
-  assert.match(testWorkflow, /io\.github\.jamebal\.headscale-webui\.headscale\.compatibility=\$\{\{ env\.HEADSCALE_COMPATIBILITY \}\}/)
-  assert.doesNotMatch(testWorkflow, /headscale-webui:latest/)
-  assert.doesNotMatch(testWorkflow, /headscale-webui:hs\$\{\{/)
-})
-```
-
-- [ ] **步骤 2：运行测试并确认现有 Workflow 不满足新规则**
-
-运行：
+- [ ] **步骤 2：运行定向测试并确认 RED**
 
 ```bash
-npm run test:release
+node --test tests/release-image-promotion.test.mjs
+node --test tests/release-workflows.test.mjs
 ```
 
-预期：`release-metadata` 测试通过，`release-workflows` 测试失败并指出缺少统一脚本或兼容标签。
+预期：promotion 测试因缺少脚本失败，Workflow 测试因仍直接推正式标签且缺少 concurrency 与 promotion step 失败。
 
-- [ ] **步骤 3：修改正式 Workflow 的触发器和版本读取步骤**
+- [ ] **步骤 3：让 Workflow 只构建 staging**
 
-将 `.github/workflows/build.yml` 顶部触发器改为：
-
-```yaml
-on:
-  workflow_dispatch:
-  release:
-    types: [published]
-```
-
-删除原来的 `Extract project version from package.json` 步骤。在 `Set up Node.js 20.14.0` 之后、安装依赖之前增加：
-
-```yaml
-      - name: 验证发布版本信息
-        run: node scripts/release-metadata.mjs >> "$GITHUB_ENV"
-```
-
-- [ ] **步骤 4：在 registry 登录后保护精确组合标签**
-
-在 `.github/workflows/build.yml` 的两个登录步骤之后增加：
-
-```yaml
-      - name: 检查精确镜像标签未被占用
-        shell: bash
-        run: |
-          exact_tag="${PROJECT_VERSION}-hs${HEADSCALE_COMPATIBILITY}"
-          images=(
-            "jmal/headscale-webui"
-            "ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui"
-          )
-          for image in "${images[@]}"; do
-            if docker manifest inspect "${image}:${exact_tag}" >/dev/null 2>&1; then
-              echo "::error::精确镜像标签已存在：${image}:${exact_tag}，请提升 WebUI 版本后重新发布"
-              exit 1
-            fi
-          done
-```
-
-- [ ] **步骤 5：生成正式标签与镜像 metadata**
-
-把正式构建步骤的 `tags` 改为每行一个标签：
+固定正式发布并发组为 `headscale-webui-release`，`cancel-in-progress` 为 `false`。build-push action 只推以下两个标签：
 
 ```yaml
           tags: |
-            jmal/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}
-            jmal/headscale-webui:${{ env.PROJECT_VERSION }}
-            jmal/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}
-            jmal/headscale-webui:latest
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }}
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:latest
-          labels: |
-            org.opencontainers.image.version=${{ env.PROJECT_VERSION }}
-            io.github.jamebal.headscale-webui.headscale.compatibility=${{ env.HEADSCALE_COMPATIBILITY }}
+            jmal/headscale-webui:build-${{ github.sha }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:build-${{ github.sha }}
 ```
 
-保留现有的 `platforms: linux/amd64,linux/arm64` 和 `build-args`。
+保留版本和兼容版本 labels，增加 revision label 与 index-scope revision annotation，并保留 `linux/amd64,linux/arm64`。
 
-- [ ] **步骤 6：让测试 Workflow 复用版本校验**
+- [ ] **步骤 4：实现 fail-closed promotion 状态机**
 
-删除 `.github/workflows/test-build.yml` 原有的 `Extract project version from package.json` 步骤，在 Node.js setup 之后增加：
+创建 `scripts/promote-image-tags.mjs`，使用 `spawnSync` 调用 `docker buildx imagetools inspect/create`。inspect 只有规范化完整 ref 的精确 `ERROR: ...: not found` 或 ref-bound `manifest unknown` 可视为缺失；认证、限流、网络、TLS、credential helper 和本地 Docker 错误全部停止。
+
+canonical 必须具有正确 revision index annotation、`linux/amd64`、`linux/arm64` 和 sha256 digest。任何 create source 必须固定为 `IMAGE@sha256:...`。
+
+- [ ] **步骤 5：按 exact 优先顺序支持恢复**
+
+创建任何 exact 前先 inspect 两侧 exact 与 project。已有单侧 exact 时从其 digest 补齐另一侧；两侧均无 exact 时校验两侧 staging digest 一致，先创建并复查 Docker exact，再跨 registry 创建 GHCR exact。两侧 exact 一致后，每个 registry 分别从自身 exact digest 创建 project、`hs0.25` 和 `latest`，最后 inspect 八个正式标签。
+
+- [ ] **步骤 6：在 staging 后调用 promotion CLI**
 
 ```yaml
-      - name: 验证发布版本信息
-        run: node scripts/release-metadata.mjs >> "$GITHUB_ENV"
+      - name: 提升正式镜像标签
+        run: >-
+          node scripts/promote-image-tags.mjs
+          jmal/headscale-webui
+          ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui
+          "$PROJECT_VERSION"
+          "$HEADSCALE_COMPATIBILITY"
+          "${{ github.sha }}"
 ```
 
-保留且仅保留两个 `test` 镜像标签；为测试镜像增加与正式镜像相同的 `labels`：
-
-```yaml
-          labels: |
-            org.opencontainers.image.version=${{ env.PROJECT_VERSION }}
-            io.github.jamebal.headscale-webui.headscale.compatibility=${{ env.HEADSCALE_COMPATIBILITY }}
-```
-
-- [ ] **步骤 7：运行 Workflow 测试和 YAML 语法解析**
-
-运行：
+- [ ] **步骤 7：运行 GREEN 与完整静态验证**
 
 ```bash
 npm run test:release
 ruby -e "require 'yaml'; %w[.github/workflows/build.yml .github/workflows/test-build.yml].each { |file| YAML.parse_file(file) }; puts 'Workflow YAML 语法正确'"
+npm run lint
+npm run build:prod
+git diff --check
 ```
 
-预期：所有发布配置测试通过，并输出 `Workflow YAML 语法正确`。
+预期：全部成功；测试只使用 fake runner，不实际访问 registry。
 
-- [ ] **步骤 8：提交 Workflow 调整**
+- [ ] **步骤 8：提交可恢复发布重构**
 
 ```bash
-git add .github/workflows/build.yml .github/workflows/test-build.yml tests/release-workflows.test.mjs
-git commit -m "ci: 发布 Headscale 兼容镜像标签"
+git add package.json package-lock.json .github/workflows/build.yml scripts/promote-image-tags.mjs tests/release-image-promotion.test.mjs tests/release-workflows.test.mjs docs/superpowers/specs/2026-07-13-headscale-compatible-image-tags-design.md docs/superpowers/plans/2026-07-13-headscale-compatible-image-tags.md
+git commit -m "refactor(ci): 支持可恢复的双仓库镜像发布"
 ```
 
 ### 任务 4：同步中英文部署与升级文档
@@ -489,11 +406,11 @@ Supported Headscale series: `v0.25.x`.
 
 Docker image tags include both the WebUI version and the compatible Headscale series:
 
-- `0.0.1-hs0.25`: immutable WebUI and Headscale compatibility combination.
+- `0.0.6-hs0.25`: immutable WebUI and Headscale compatibility combination.
 - `hs0.25`: latest WebUI release compatible with Headscale `v0.25.x`.
 - `latest`: latest WebUI release; `latest` does not guarantee compatibility with older Headscale versions.
 
-Pin `0.0.1-hs0.25` for reproducible deployments, or `hs0.25` to receive WebUI fixes that retain Headscale `v0.25.x` compatibility. Check the compatibility tag before upgrading Headscale.
+Pin `0.0.6-hs0.25` for reproducible deployments, or `hs0.25` to receive WebUI fixes that retain Headscale `v0.25.x` compatibility. Check the compatibility tag before upgrading Headscale.
 ```
 
 把英文 Docker Compose 示例的镜像改为：
@@ -511,11 +428,11 @@ image: jmal/headscale-webui:hs0.25
 
 Docker 镜像标签同时表达 WebUI 版本和兼容的 Headscale 系列：
 
-- `0.0.1-hs0.25`：固定的 WebUI 与 Headscale 兼容版本组合。
+- `0.0.6-hs0.25`：固定的 WebUI 与 Headscale 兼容版本组合。
 - `hs0.25`：兼容 Headscale `v0.25.x` 的最新 WebUI。
 - `latest`：最新 WebUI；`latest` 不保证兼容旧版 Headscale。
 
-需要可复现部署时固定使用 `0.0.1-hs0.25`；需要接收仍兼容 Headscale `v0.25.x` 的 WebUI 修复时使用 `hs0.25`。升级 Headscale 前必须先核对兼容标签。
+需要可复现部署时固定使用 `0.0.6-hs0.25`；需要接收仍兼容 Headscale `v0.25.x` 的 WebUI 修复时使用 `hs0.25`。升级 Headscale 前必须先核对兼容标签。
 ```
 
 把中文 Docker Compose 示例的镜像改为：
@@ -541,12 +458,14 @@ git add README.md README.zh-CN.md tests/release-docs.test.mjs
 git commit -m "docs: 说明 Headscale 镜像兼容标签"
 ```
 
-### 任务 5：执行完整验证并准备首次 v0.25 发布
+### 任务 5：执行完整验证并准备 0.0.6 兼容镜像发布
 
 **文件：**
 
 - 验证：`package.json`
 - 验证：`scripts/release-metadata.mjs`
+- 验证：`scripts/promote-image-tags.mjs`
+- 验证：`tests/release-image-promotion.test.mjs`
 - 验证：`.github/workflows/build.yml`
 - 验证：`.github/workflows/test-build.yml`
 - 验证：`README.md`
@@ -583,33 +502,38 @@ git diff --check
 git status --short
 ```
 
-预期：版本输出为 `PROJECT_VERSION=0.0.1` 和 `HEADSCALE_COMPATIBILITY=0.25`；`git diff --check` 无输出；工作区只包含计划内文件，或者在前述提交完成后保持干净。
+预期：版本输出为 `PROJECT_VERSION=0.0.6` 和 `HEADSCALE_COMPATIBILITY=0.25`；`git diff --check` 无输出；工作区只包含计划内文件，或者在前述提交完成后保持干净。
 
-- [ ] **步骤 4：合并后手动触发首次正式镜像构建**
+- [ ] **步骤 4：合并后手动触发 0.0.6 正式镜像构建**
 
 在 GitHub Actions 中手动运行 `Build Docker Image`。这是外部发布动作，执行者必须得到仓库维护者明确授权并确认以下条件后才能触发：
 
 ```text
-package.json version = 0.0.1
+package.json version = 0.0.6
 package.json headscaleCompatibility = 0.25
 目标代码仍兼容 Headscale v0.25.x
 Docker Hub 与 GHCR secrets 均有效
+两个 registry 中不存在冲突的 0.0.6 或 0.0.6-hs0.25
 ```
 
-预期：Docker Hub 和 GHCR 均生成 `0.0.1-hs0.25`、`0.0.1`、`hs0.25`、`latest`，且两个架构 manifest 均存在。
+预期：Workflow 先生成两个 `build-${GITHUB_SHA}` staging tags，再建立 canonical exact；Docker Hub 和 GHCR 最终均生成 `0.0.6-hs0.25`、`0.0.6`、`hs0.25`、`latest`，且两个架构 manifest 与 revision index annotation 均存在。若 promotion 中断，只允许用同一 revision 重跑恢复，不得手工移动 exact 或 project。
 
 - [ ] **步骤 5：验证首次发布结果**
 
 运行：
 
 ```bash
-docker buildx imagetools inspect jmal/headscale-webui:0.0.1-hs0.25
+docker buildx imagetools inspect jmal/headscale-webui:0.0.6-hs0.25
+docker buildx imagetools inspect jmal/headscale-webui:0.0.6
 docker buildx imagetools inspect jmal/headscale-webui:hs0.25
-docker buildx imagetools inspect ghcr.io/jamebal/headscale-webui:0.0.1-hs0.25
+docker buildx imagetools inspect jmal/headscale-webui:latest
+docker buildx imagetools inspect ghcr.io/jamebal/headscale-webui:0.0.6-hs0.25
+docker buildx imagetools inspect ghcr.io/jamebal/headscale-webui:0.0.6
 docker buildx imagetools inspect ghcr.io/jamebal/headscale-webui:hs0.25
+docker buildx imagetools inspect ghcr.io/jamebal/headscale-webui:latest
 ```
 
-预期：四条命令均成功，并显示 `linux/amd64` 与 `linux/arm64` manifest。若实际 GHCR owner 与 `jamebal` 不同，使用 `GHCR_IO_USERNAME` 对应的 owner 替换命令中的 `jamebal`。
+预期：八条命令均成功，digest 全部等于本次 canonical，且显示 `linux/amd64`、`linux/arm64` 与本次 Git SHA revision。若实际 GHCR owner 与 `jamebal` 不同，使用 `GHCR_IO_USERNAME` 对应的 owner 替换命令中的 `jamebal`。
 
 ## 后续升级到 Headscale v0.29.x
 
@@ -633,5 +557,6 @@ npm run lint
 npm run build:prod
 ```
 
-4. 全部通过且获得维护者授权后，发布 `0.1.0-hs0.29`、`0.1.0`、`hs0.29` 和新的 `latest`。
-5. 保留现有 `0.0.1-hs0.25` 与 `hs0.25`，不移动、不删除。
+4. 全部通过且获得维护者授权后，通过 staging 和 promotion 发布 `0.1.0-hs0.29`、`0.1.0`、`hs0.29` 和新的 `latest`。
+5. promotion 必须继续保护新的 exact/project，并支持双仓库与 aliases 的同 revision 恢复。
+6. 保留现有 `0.0.6-hs0.25` 与 `hs0.25`，不移动、不删除。

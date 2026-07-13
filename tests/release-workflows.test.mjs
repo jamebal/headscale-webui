@@ -15,6 +15,14 @@ const testBuildWorkflow = await readFile(
 const metadataCommand = 'node scripts/release-metadata.mjs >> "$GITHUB_ENV"'
 const versionLabel = 'org.opencontainers.image.version=${{ env.PROJECT_VERSION }}'
 const compatibilityLabel = 'io.github.jamebal.headscale-webui.headscale.compatibility=${{ env.HEADSCALE_COMPATIBILITY }}'
+const revisionLabel = 'org.opencontainers.image.revision=${{ github.sha }}'
+
+function workflowStep(workflow, name) {
+  const start = workflow.indexOf(`      - name: ${name}`)
+  assert.notEqual(start, -1, `缺少 Workflow step：${name}`)
+  const end = workflow.indexOf('\n      - name:', start + 1)
+  return workflow.slice(start, end === -1 ? undefined : end)
+}
 
 test('正式 Workflow 使用统一脚本读取发布版本信息', () => {
   assert.ok(buildWorkflow.includes(metadataCommand))
@@ -31,43 +39,51 @@ test('正式 Workflow 只在手动触发和正式发布时运行', () => {
   assert.ok(!buildWorkflow.includes('tags: [v*]'))
 })
 
-test('正式 Workflow 发布 Docker Hub 的全部镜像标签', () => {
-  for (const tag of [
-    'jmal/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}',
-    'jmal/headscale-webui:${{ env.PROJECT_VERSION }}',
-    'jmal/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}',
-    'jmal/headscale-webui:latest',
-  ]) {
-    assert.ok(buildWorkflow.includes(tag), `缺少 Docker Hub 镜像标签：${tag}`)
-  }
-})
-
-test('正式 Workflow 发布 GHCR 的全部镜像标签', () => {
-  const image = 'ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:'
-  for (const tag of [
-    '${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}',
-    '${{ env.PROJECT_VERSION }}',
-    'hs${{ env.HEADSCALE_COMPATIBILITY }}',
-    'latest',
-  ]) {
-    assert.ok(buildWorkflow.includes(`${image}${tag}`), `缺少 GHCR 镜像标签：${tag}`)
-  }
-})
-
-test('正式 Workflow 写入版本 labels 并保留双架构构建', () => {
-  assert.ok(buildWorkflow.includes(versionLabel))
-  assert.ok(buildWorkflow.includes(compatibilityLabel))
-  assert.ok(buildWorkflow.includes('platforms: linux/amd64,linux/arm64'))
-})
-
-test('正式 Workflow 阻止覆盖精确镜像标签', () => {
+test('正式 Workflow 使用固定并发保护', () => {
   assert.ok(buildWorkflow.includes([
-    '      - name: 检查精确镜像标签未被占用',
-    '        shell: bash',
-    '        run: |',
+    'concurrency:',
+    '  group: headscale-webui-release',
+    '  cancel-in-progress: false',
   ].join('\n')))
-  assert.ok(buildWorkflow.includes('docker manifest inspect'))
-  assert.ok(buildWorkflow.includes('精确镜像标签已存在'))
+})
+
+test('正式 Workflow 构建步骤只推送两个 staging 标签', () => {
+  const step = workflowStep(buildWorkflow, '构建并推送 Docker 镜像')
+  const tagsStart = step.indexOf('          tags: |')
+  const tagsEnd = step.indexOf('          labels: |', tagsStart)
+  const tags = step.slice(tagsStart, tagsEnd)
+  assert.ok(tags.includes('jmal/headscale-webui:build-${{ github.sha }}'))
+  assert.ok(tags.includes('ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:build-${{ github.sha }}'))
+  assert.equal(tags.match(/headscale-webui:/g)?.length, 2)
+  assert.ok(!tags.includes('env.PROJECT_VERSION'))
+  assert.ok(!tags.includes('env.HEADSCALE_COMPATIBILITY'))
+})
+
+test('正式 Workflow 构建步骤写入 revision metadata 和 index annotation', () => {
+  const step = workflowStep(buildWorkflow, '构建并推送 Docker 镜像')
+  assert.ok(step.includes(versionLabel))
+  assert.ok(step.includes(compatibilityLabel))
+  assert.ok(step.includes(revisionLabel))
+  assert.ok(step.includes([
+    '          annotations: |',
+    '            index:org.opencontainers.image.revision=${{ github.sha }}',
+  ].join('\n')))
+  assert.ok(step.includes('platforms: linux/amd64,linux/arm64'))
+})
+
+test('正式 Workflow 在 staging 构建后调用双仓库 promotion CLI', () => {
+  const buildStep = workflowStep(buildWorkflow, '构建并推送 Docker 镜像')
+  const promotionStep = workflowStep(buildWorkflow, '提升正式镜像标签')
+  assert.ok(buildWorkflow.indexOf(buildStep) < buildWorkflow.indexOf(promotionStep))
+  assert.ok(promotionStep.includes([
+    '          node scripts/promote-image-tags.mjs',
+    '          jmal/headscale-webui',
+    '          ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui',
+    '          "$PROJECT_VERSION"',
+    '          "$HEADSCALE_COMPATIBILITY"',
+    '          "${{ github.sha }}"',
+  ].join('\n')))
+  assert.ok(!buildWorkflow.includes('docker manifest inspect'))
 })
 
 test('测试 Workflow 使用统一脚本和仅有的两个 test 标签', () => {

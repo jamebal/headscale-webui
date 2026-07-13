@@ -2,129 +2,126 @@
 
 ## 目标
 
-让发布的 Headscale WebUI 镜像同时表达 WebUI 自身版本和兼容的 Headscale 次版本系列，确保以后升级到 Headscale `v0.29.x` 时，兼容 `v0.25.x` 的镜像仍可被明确拉取，不会因 `latest` 被覆盖而丢失。
+让 Headscale WebUI 镜像同时表达 WebUI 自身版本和兼容的 Headscale 次版本系列，并保证 Docker Hub 与 GHCR 在并发、失败和重跑场景下得到同一份不可变发布结果。
 
-## 当前状态
-
-- `package.json` 仅声明 WebUI 版本 `0.0.1`，没有机器可读的 Headscale 兼容版本。
-- `README.md` 和 `README.zh-CN.md` 仅以文字声明支持 Headscale `v0.25.0`。
-- `.github/workflows/build.yml` 只发布 `${PROJECT_VERSION}` 和 `latest` 标签。
-- `.github/workflows/test-build.yml` 只发布 `test` 标签。
-- Docker Hub 与 GHCR 的正式镜像都无法从现有标签判断 Headscale 兼容范围。
-
-## 版本来源
-
-在 `package.json` 顶层增加：
+当前发布版本为 WebUI `0.0.6`，兼容 Headscale `v0.25.x`。`package.json` 是这两个版本字段的唯一来源：
 
 ```json
+"version": "0.0.6",
 "headscaleCompatibility": "0.25"
 ```
 
-两个版本字段各自承担单一职责：
-
-- `version` 表示 Headscale WebUI 的 Semantic Version，例如 `0.0.1`。
-- `headscaleCompatibility` 表示支持的 Headscale 次版本系列，例如 `0.25`，含义为兼容 `v0.25.x`。
-
-Headscale patch 版本不进入兼容标签。只有确认 patch 版本存在 API 不兼容时，才另行调整本设计。
+`version` 必须是三段数字版本，`headscaleCompatibility` 必须是两段数字系列。Headscale patch 版本不进入兼容标签。
 
 ## 正式镜像标签
 
-每次正式发布同时向 Docker Hub 和 GHCR 推送四类标签。以 WebUI `0.0.1`、Headscale `0.25` 为例：
+Docker Hub 与 GHCR 最终都必须包含以下四类标签：
 
 ```text
-0.0.1-hs0.25
-0.0.1
+0.0.6-hs0.25
+0.0.6
 hs0.25
 latest
 ```
 
-标签语义如下：
+- `0.0.6-hs0.25` 是不可移动的精确组合标签。
+- `0.0.6` 是不可移动的 WebUI 项目版本标签。
+- `hs0.25` 是当前 Headscale 兼容系列的可移动别名。
+- `latest` 是最新正式 Release 的可移动别名。
 
-- `0.0.1-hs0.25` 是精确组合标签，发布后不得移动或覆盖。
-- `0.0.1` 是该 WebUI Release 的简写标签，发布后不得移动或覆盖。
-- `hs0.25` 指向仍兼容 Headscale `v0.25.x` 的最新 WebUI，可在该兼容系列内随 WebUI 修复版本移动。
-- `latest` 指向项目最新正式 Release，不承诺兼容旧版 Headscale。
+生产部署应固定使用 `hs0.25`，需要完全可复现时固定使用 `0.0.6-hs0.25`。`latest` 不保证兼容用户当前运行的 Headscale。
 
-Docker Hub 与 GHCR 必须生成完全一致的标签集合。
+## 分阶段发布
 
-## 升级流程
-
-首次启用新规则时，必须先以当前代码和以下版本信息发布兼容 Headscale `v0.25.x` 的镜像：
+正式 Workflow 不直接把四类正式标签交给 build-push action。构建阶段只向两个 registry 推送本次 commit 的临时 staging 标签：
 
 ```text
-version: 0.0.1
-headscaleCompatibility: 0.25
+jmal/headscale-webui:build-${GITHUB_SHA}
+ghcr.io/<owner>/headscale-webui:build-${GITHUB_SHA}
 ```
 
-这一步会建立并保留 `0.0.1-hs0.25` 与 `hs0.25`。
+多架构 index 必须包含 `linux/amd64`、`linux/arm64`，并携带以下 metadata：
 
-以后代码调整为仅支持 Headscale `v0.29.x` 时：
+- `org.opencontainers.image.version=0.0.6`
+- `io.github.jamebal.headscale-webui.headscale.compatibility=0.25`
+- `org.opencontainers.image.revision=${GITHUB_SHA}`
+- index annotation `org.opencontainers.image.revision=${GITHUB_SHA}`
 
-1. 完成并验证 Headscale `v0.29.x` API 适配。
-2. 将 WebUI `version` 提升到新的版本，例如 `0.1.0`。
-3. 将 `headscaleCompatibility` 修改为 `0.29`。
-4. 更新中英文 README 的兼容说明和 Docker Compose 示例。
-5. 发布后生成 `0.1.0-hs0.29`、`0.1.0`、`hs0.29` 和新的 `latest`。
-6. 不再更新 `hs0.25`，但保留该标签及精确组合标签供旧环境使用。
+staging 构建成功后，`scripts/promote-image-tags.mjs` 一次协调 Docker Hub 与 GHCR，将经过校验的 digest 提升为正式标签。
 
-## Workflow 调整
+## 并发与 fail-closed
 
-`.github/workflows/build.yml` 在构建前从 `package.json` 提取两个版本字段，并执行格式校验：
+Workflow 使用固定 concurrency group `headscale-webui-release`，且不取消正在执行的发布。这样同一时间最多只有一个正式 promotion 修改 aliases。
 
-- WebUI 版本必须匹配三段数字格式，例如 `0.0.1`。
-- Headscale 兼容版本必须匹配两段数字格式，例如 `0.25`。
-- 任一字段缺失或格式错误时，Workflow 必须停止，不得登录镜像仓库或推送部分标签。
+promotion 通过以下命令读取 manifest：
 
-校验成功后，Workflow 为 Docker Hub 和 GHCR 分别生成四个正式标签。现有多架构构建范围 `linux/amd64,linux/arm64` 保持不变。
-
-`.github/workflows/test-build.yml` 继续只发布 `test`，但构建时同样读取并校验兼容版本，避免主分支长期存在无效发布配置。
-
-## 镜像元数据
-
-正式镜像增加以下 metadata：
-
-- 标准 OCI `org.opencontainers.image.version` 保存 WebUI 版本。
-- 自定义 `io.github.jamebal.headscale-webui.headscale.compatibility` 保存 Headscale 兼容系列。
-
-镜像标签用于拉取与部署，metadata 用于自动检查和排障。两者必须来自同一组 `package.json` 字段，避免信息漂移。
-
-## 文档调整
-
-中英文 README 应同时说明：
-
-- `latest` 只代表最新 WebUI，不保证兼容用户当前运行的 Headscale。
-- 生产部署应固定使用 `hs0.25` 或更严格的 `0.0.1-hs0.25`。
-- Docker Compose 示例不再使用无标签镜像，因为无标签等价于 `latest`。
-- 升级 Headscale 前，应先核对镜像的 `hsX.Y` 兼容标签。
-
-当前 Docker Compose 示例固定为：
-
-```yaml
-image: jmal/headscale-webui:hs0.25
+```text
+docker buildx imagetools inspect REF --format '{{json .Manifest}}'
 ```
+
+只有两种 registry 响应可判定标签不存在：
+
+1. stderr 精确等于规范化完整 ref 的 `ERROR: ...: not found`。
+2. stderr 同时包含该规范化完整 ref 与大小写不敏感的 `manifest unknown`。
+
+Docker Hub 的短 image 必须先规范化为 `docker.io/...`。401、403、429、DNS、TLS、credential helper、Docker executable 缺失和任意无法绑定 ref 的裸 `not found` 都属于检查失败，promotion 必须立即停止。
+
+## Canonical 校验
+
+任何 staging 或 existing exact 要成为 canonical，必须同时满足：
+
+- digest 是完整 `sha256` 格式。
+- index revision annotation 等于本次 Git SHA。
+- manifest 至少包含 `linux/amd64` 与 `linux/arm64`。
+- 可包含额外的 `unknown/unknown` attestation manifest。
+
+所有 `imagetools create` 的 source 必须使用 `IMAGE@sha256:...`，禁止 mutable tag source。
+
+## 可恢复状态机
+
+在创建任何 exact 前，promotion 先检查两侧 exact 与 project 标签。
+
+### 已有 exact
+
+- 校验已有 exact 的 revision、平台和 digest。
+- 两侧 exact 都存在时，其 digest 必须完全一致。
+- 仅一侧 exact 存在时，以该 exact 的 digest-pinned ref 为 canonical source，只补齐另一侧 exact。
+- project 已存在时只能等于 canonical digest，否则失败。
+
+这条路径支持 Docker exact 已成功但 GHCR exact 失败后的安全重跑，也支持对称恢复。不同 revision 不能复用相同 exact。
+
+### 首次建立 exact
+
+- 两侧 exact 均不存在时，两侧 project 也必须均不存在。
+- 校验两侧 staging 的 revision、平台和 digest；digest 必须一致。
+- 先从 Docker staging digest 单独创建 Docker exact，并重新 inspect。
+- 再从已确认的 Docker canonical digest 跨 registry 单独创建 GHCR exact。
+
+exact 必须先落盘并重新校验。只有两侧 exact revision、平台和 digest 完全一致后，才能处理 aliases。
+
+### 提升 aliases
+
+每个 registry 分别从自身 `exact-image@canonicalDigest` 创建 project、`hs0.25` 与 `latest`。exact 不包含在 alias create 中，因此同 revision 重跑不会移动 exact。project 不存在或已经等于 canonical 才能继续；`hs0.25` 与 `latest` 允许移动到本次 canonical。
+
+promotion 最后重新 inspect 两个 registry 的 exact、project、兼容标签和 latest。八个标签必须都等于 canonical digest，且 revision 与平台仍正确。create 或 post verification 的任何错误都会让发布失败；部分 aliases 成功后可通过同 revision 重跑补齐。
+
+## 测试镜像
+
+`.github/workflows/test-build.yml` 继续只发布两个 `test` 标签，并复用版本校验与现有版本 labels。测试 Workflow 不运行正式 promotion，不创建 exact、project、兼容或 latest 标签。
 
 ## 验证标准
 
-1. 本地校验能够从 `package.json` 读取 `0.0.1` 与 `0.25`。
-2. Workflow 语法有效，正式发布事件和手动触发均可生成同一组标签。
-3. Docker Hub 标签集合包含 `0.0.1-hs0.25`、`0.0.1`、`hs0.25` 和 `latest`。
-4. GHCR 标签集合与 Docker Hub 一致。
-5. 构建产物继续包含 `linux/amd64` 和 `linux/arm64` manifest。
-6. 镜像 metadata 中的 WebUI 和 Headscale 版本与标签一致。
-7. 中英文 README 的版本说明、标签示例和 Docker Compose 示例一致。
-8. 测试镜像仍只使用 `test`，不会覆盖任何正式版本标签。
-
-## 错误处理
-
-- 版本字段无效时，在构建和推送之前失败，并输出具体字段名。
-- 任一 registry 登录或推送失败时，Workflow 整体失败，不宣称 Release 镜像发布完成。
-- 如果同一精确组合标签已经存在，发布流程不得把不同代码覆盖到该标签；应提升 WebUI 版本后重新发布。
-- 如果 Headscale 新版本适配尚未验证，不得提前移动 `latest` 或创建对应的 `hsX.Y` 标签。
+1. 本地版本入口输出 `PROJECT_VERSION=0.0.6` 与 `HEADSCALE_COMPATIBILITY=0.25`。
+2. promotion 单测只使用注入的 fake Docker runner，不访问 registry。
+3. 首次发布、同 revision 重跑、单侧 exact 恢复和 aliases 部分恢复均通过。
+4. revision、平台或 digest 冲突，以及认证、限流和网络错误均 fail-closed。
+5. Workflow 只构建两个 staging 标签，并在其后调用双仓库 promotion CLI。
+6. 最终 Docker Hub 与 GHCR 均包含 `0.0.6-hs0.25`、`0.0.6`、`hs0.25`、`latest`。
 
 ## 非目标
 
 - 不为每个 Headscale patch 版本建立单独标签。
-- 不维护 `headscale-0.25`、`headscale-0.29` 等长期代码分支。
-- 不在本次改动中实现 Headscale `v0.29.x` API 适配。
+- 不维护长期版本分支。
+- 不在本次改动中适配 Headscale `v0.29.x` API。
 - 不改变 Dockerfile、Nginx 配置或前端运行方式。
 - 不自动探测用户部署的 Headscale 服务端版本。

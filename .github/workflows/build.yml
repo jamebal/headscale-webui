@@ -5,6 +5,10 @@ on:
   release:
     types: [published]
 
+concurrency:
+  group: headscale-webui-release
+  cancel-in-progress: false
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -48,21 +52,6 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: 检查精确镜像标签未被占用
-        shell: bash
-        run: |
-          exact_tag="${PROJECT_VERSION}-hs${HEADSCALE_COMPATIBILITY}"
-          images=(
-            "jmal/headscale-webui"
-            "ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui"
-          )
-          for image in "${images[@]}"; do
-            if docker manifest inspect "${image}:${exact_tag}" >/dev/null 2>&1; then
-              echo "::error::精确镜像标签已存在：${image}:${exact_tag}，请提升 WebUI 版本后重新发布"
-              exit 1
-            fi
-          done
-
       - name: 构建并推送 Docker 镜像
         uses: docker/build-push-action@v5
         with:
@@ -70,17 +59,23 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            jmal/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}
-            jmal/headscale-webui:${{ env.PROJECT_VERSION }}
-            jmal/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}
-            jmal/headscale-webui:latest
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }}-hs${{ env.HEADSCALE_COMPATIBILITY }}
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:${{ env.PROJECT_VERSION }}
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:hs${{ env.HEADSCALE_COMPATIBILITY }}
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:latest
+            jmal/headscale-webui:build-${{ github.sha }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui:build-${{ github.sha }}
           labels: |
             org.opencontainers.image.version=${{ env.PROJECT_VERSION }}
             io.github.jamebal.headscale-webui.headscale.compatibility=${{ env.HEADSCALE_COMPATIBILITY }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          annotations: |
+            index:org.opencontainers.image.revision=${{ github.sha }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
+
+      - name: 提升正式镜像标签
+        run: >-
+          node scripts/promote-image-tags.mjs
+          jmal/headscale-webui
+          ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/headscale-webui
+          "$PROJECT_VERSION"
+          "$HEADSCALE_COMPATIBILITY"
+          "${{ github.sha }}"
