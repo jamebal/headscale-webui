@@ -36,6 +36,8 @@
     "lint": "eslint . && vue-tsc --noEmit",
     "lint:fix": "eslint . --fix",
     "lint:check": "npx @eslint/config-inspector",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:release": "node --test tests/release-*.test.mjs",
     "sizecheck": "npx vite-bundle-visualizer"
   },
@@ -58,7 +60,9 @@
     "@types/node": "^22.20.1",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vitejs/plugin-vue-jsx": "^5.1.6",
+    "@vue/test-utils": "^2.4.11",
     "eslint": "^9.9.0",
+    "happy-dom": "^20.10.6",
     "lint-staged": "^15.2.9",
     "naive-ui": "^2.39.0",
     "sass": "^1.77.8",
@@ -72,6 +76,7 @@
     "vite-bundle-visualizer": "^1.2.1",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-vue-devtools": "^8.1.5",
+    "vitest": "^4.1.10",
     "vue-tsc": "^2.0.29"
   },
   "simple-git-hooks": {
