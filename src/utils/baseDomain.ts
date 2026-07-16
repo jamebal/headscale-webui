@@ -25,3 +25,16 @@ export function buildNodeFqdn(givenName: string, baseDomain: string) {
 
   return `${normalizedName}.${normalizedDomain}`
 }
+
+export function buildNodeCopyValues(
+  givenName: string,
+  ipAddresses: string[],
+  baseDomain: string,
+) {
+  const fqdn = buildNodeFqdn(givenName, baseDomain)
+  return [...new Set([
+    ...(fqdn ? [fqdn] : []),
+    givenName,
+    ...ipAddresses,
+  ].filter(Boolean))]
+}
