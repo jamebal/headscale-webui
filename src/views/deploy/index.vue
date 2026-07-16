@@ -93,12 +93,12 @@ function renderExitNodeOptions() {
   })
 }
 
-function changeOption(value: string[]) {
-  options.value = value
-  if (value.includes('--exit-node')) {
+function changeOption(value: Array<string | number>) {
+  options.value = value.filter((option): option is string => typeof option === 'string')
+  if (options.value.includes('--exit-node')) {
     renderExitNodeOptions()
   }
-  if (!value.includes('--exit-node')) {
+  if (!options.value.includes('--exit-node')) {
     // 去掉--exit-node-allow-lan-access
     options.value = options.value.filter(option => option !== '--exit-node-allow-lan-access')
   }

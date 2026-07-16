@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
-import { defineConfig, loadEnv } from 'vite'
+import { loadEnv } from 'vite'
+import { defineConfig } from 'vitest/config'
 import { createVitePlugins } from './build/plugins'
 import { createViteProxy } from './build/proxy'
 import { serviceConfig } from './service.config'
@@ -29,6 +30,13 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       include: ['@guolao/vue-monaco-editor'],
+    },
+    test: {
+      environment: 'happy-dom',
+      setupFiles: ['./tests/setup.ts'],
+      include: ['./tests/**/*.test.ts'],
+      clearMocks: true,
+      restoreMocks: true,
     },
   }
 })

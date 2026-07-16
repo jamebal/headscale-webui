@@ -1,6 +1,6 @@
 import type { Router } from 'vue-router'
 import { useAppStore, useRouteStore, useTabStore } from '@/store'
-import { local } from '@/utils'
+import { getSessionApiKey } from '@/utils'
 
 const title = import.meta.env.VITE_APP_NAME
 
@@ -19,7 +19,7 @@ export function setupRouterGuard(router: Router) {
     appStore.showProgress && window.$loadingBar?.start()
 
     // 判断有无TOKEN,登录鉴权
-    const isLogin = Boolean(local.get('accessToken'))
+    const isLogin = Boolean(getSessionApiKey())
     if (!isLogin) {
       if (to.name === 'login')
         next()

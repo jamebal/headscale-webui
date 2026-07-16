@@ -2,7 +2,13 @@ import { useRouteStore } from './router'
 import { useTabStore } from './tab'
 import { fetchLogin } from '@/service'
 import { router } from '@/router'
-import { local } from '@/utils'
+import {
+  clearSessionApiKey,
+  getSessionApiKey,
+  local,
+  saveConnectionConfig,
+  setSessionApiKey,
+} from '@/utils'
 
 interface AuthStatus {
   userInfo: Api.Login.Info | null
@@ -12,7 +18,7 @@ export const useAuthStore = defineStore('auth-store', {
   state: (): AuthStatus => {
     return {
       userInfo: local.get('userInfo'),
-      token: local.get('accessToken') || '',
+      token: getSessionApiKey(),
     }
   },
   getters: {
@@ -46,37 +52,37 @@ export const useAuthStore = defineStore('auth-store', {
       }
     },
     clearAuthStorage() {
-      local.remove('accessToken')
-      local.remove('refreshToken')
+      clearSessionApiKey()
       local.remove('userInfo')
+      this.token = ''
+      this.userInfo = null
     },
 
     /* 用户登录 */
-    async login(serverUrl: string, apiKey: string) {
+    async login(serverUrl: string, baseDomain: string, apiKey: string) {
+      saveConnectionConfig(serverUrl, baseDomain)
+      setSessionApiKey(apiKey)
+      this.token = apiKey
+
       try {
-        local.set('serverUrl', serverUrl)
-        local.set('accessToken', apiKey)
         const result = await fetchLogin()
         if (!result || !result.isSuccess) {
           this.clearAuthStorage()
           return
         }
         // 处理登录信息
-        await this.handleLoginInfo(apiKey, result.data.users[0])
+        await this.handleLoginInfo(result.data.users[0])
       }
       catch (e) {
+        this.clearAuthStorage()
         console.warn('[Login Error]:', e)
       }
     },
 
     /* 处理登录返回的数据 */
-    async handleLoginInfo(apiKey: string, data: any) {
-      // 将token和userInfo保存下来
+    async handleLoginInfo(data: Api.Login.Info) {
       local.set('userInfo', data)
-      local.set('accessToken', apiKey)
-      local.set('refreshToken', apiKey)
-      // this.token = data.accessToken
-      // this.userInfo = data
+      this.userInfo = data
 
       // 添加路由和菜单
       const routeStore = useRouteStore()
@@ -84,8 +90,8 @@ export const useAuthStore = defineStore('auth-store', {
 
       // 进行重定向跳转
       const route = unref(router.currentRoute)
-      const query = route.query as { redirect: string }
-      router.push({
+      const query = route.query as { redirect?: string }
+      await router.push({
         path: query.redirect || '/',
       })
     },

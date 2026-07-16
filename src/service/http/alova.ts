@@ -9,13 +9,19 @@ import {
 import {
   DEFAULT_ALOVA_OPTIONS,
 } from './config'
-import { local } from '@/utils'
+import {
+  clearSessionApiKey,
+  getSessionAuthorizationHeader,
+  local,
+} from '@/utils'
 import { router } from '@/router'
 
 const { onAuthRequired } = createServerTokenAuthentication<VueHookType>({
   // 添加token到请求头
   assignToken: (method) => {
-    method.config.headers.Authorization = `Bearer ${local.get('accessToken')}`
+    const authorization = getSessionAuthorizationHeader()
+    if (authorization)
+      method.config.headers.Authorization = authorization
   },
 })
 
@@ -42,8 +48,7 @@ async function readStreamAsText(response: Response) {
 }
 
 async function toLogin() {
-  local.remove('accessToken')
-  local.remove('refreshToken')
+  clearSessionApiKey()
   local.remove('userInfo')
   await router.push('/login')
 }

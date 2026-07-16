@@ -19,6 +19,7 @@ import { useAppStore } from '@/store'
 import { showBackfillipsDialog } from '@/views/node/backfillIpsDialog'
 import NodeSubNetDetails from '@/views/node/nodeSubNetDetails.vue'
 import ExitNodeDetails from '@/views/node/exitNodeDetails.vue'
+import { buildNodeCopyValues, local } from '@/utils'
 
 const dialog = useDialog()
 
@@ -33,6 +34,8 @@ const userList = ref<User[]>([])
 const registerModalVisible = ref(false)
 
 const appStore = useAppStore()
+
+const baseDomain = computed(() => local.get('baseDomain') || '')
 
 watch(() => appStore.message, (newMessage) => {
   if (newMessage?.event === 'refreshNodeList') {
@@ -77,8 +80,8 @@ const columns = computed((): DataTableColumns<NodeData> => [
     title: t('app.name'),
     key: 'name',
     render(rowData) {
-      let routes = []
-      let exitNodes = []
+      let routes: RouteData[] = []
+      let exitNodes: RouteData[] = []
       if (rowData.routes && rowData.routes.length > 0) {
         routes = rowData.routes.filter(route => route.isPrimary)
         exitNodes = rowData.routes.filter(route => !route.isPrimary && route.prefix === '0.0.0.0/0')
@@ -92,13 +95,13 @@ const columns = computed((): DataTableColumns<NodeData> => [
           h('span', { style: { color: 'var(--test-color-fringe)' } }, rowData.name),
           routes.length > 0
             ? h(NodeSubNetDetails, {
-              routes,
-            })
+                routes,
+              })
             : '',
           exitNodes.length > 0
             ? h(ExitNodeDetails, {
-              routes: exitNodes,
-            })
+                routes: exitNodes,
+              })
             : '',
         ],
       )
@@ -112,10 +115,11 @@ const columns = computed((): DataTableColumns<NodeData> => [
     title: t('app.ipAddresses'),
     key: 'ipAddresses',
     render(row) {
-      const dropdownOptions = [
-        createOption(row.givenName, row.givenName),
-        ...row.ipAddresses.map(ip => createOption(ip, ip)),
-      ]
+      const dropdownOptions = buildNodeCopyValues(
+        row.givenName,
+        row.ipAddresses,
+        baseDomain.value,
+      ).map(value => createOption(value, value))
       return h(
         'div',
         { style: { } },

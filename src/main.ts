@@ -3,8 +3,11 @@ import AppVue from './App.vue'
 import AppLoading from './components/common/AppLoading.vue'
 import { installRouter } from '@/router'
 import { installPinia } from '@/store'
+import { migrateLegacyAuthStorage } from '@/utils'
 
 async function setupApp() {
+  migrateLegacyAuthStorage()
+
   // 载入全局loading加载状态
   const appLoading = createApp(AppLoading)
   appLoading.mount('#appLoading')
