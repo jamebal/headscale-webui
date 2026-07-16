@@ -29,6 +29,12 @@ For reproducible deployments, pin `0.0.6-hs0.25`. Use `hs0.25` when you want com
 | VITE_APP_NAME | Project Name                 | `Headscale WebUI` |
 | VITE_DEFAULT_LANG | Default Language, `enUS` or `zh_CN` | `enUS`            |
 
+### Login connection settings
+
+You can enter Headscale's `dns.base_domain` on the login page. When configured, the copy menu in the node IP address column includes the full `givenName.base_domain` name.
+
+`Server URL` and `Base Domain` are stored in browser `localStorage`. The Headscale API Key is stored only in the current tab's `sessionStorage`: it survives reloads but must be entered again after the tab is closed. Access the WebUI only over a trusted HTTPS endpoint.
+
 ### Deploy to Netlify
 Netlify is amazing, so if you're in need of somewhere to host your own version of this project, I highly recommend it.
 

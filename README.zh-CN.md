@@ -30,6 +30,12 @@
 | VITE_APP_NAME | 项目名称                | `Headscale WebUI` |
 | VITE_DEFAULT_LANG | 默认语言, `enUS` or `zh_CN` | `zh_CN`           |
 
+### 登录连接配置
+
+登录时可填写 Headscale 的 `dns.base_domain`。配置后，节点 IP 地址列的复制菜单会增加 `givenName.base_domain` 完整域名。
+
+`Server URL` 和 `Base Domain` 会保存在浏览器 `localStorage`。Headscale API Key 只保存在当前 tab 的 `sessionStorage`：刷新页面后仍有效，关闭 tab 后需要重新输入。请仅通过可信的 HTTPS 地址访问 WebUI。
+
 ### 部署到 Netlify
 
 Netlify 非常棒，因此如果你需要一个地方来托管你自己版本的这个项目，我强烈推荐它。
