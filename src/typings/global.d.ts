@@ -31,18 +31,23 @@ declare namespace NaiveUI {
 declare namespace Storage {
   interface Session {
     dict: DictMap
+    accessToken: string
   }
 
   interface Local {
     /* 存储用户信息 */
     userInfo: Api.Login.Info
     serverUrl: string
-    /* 存储访问token */
+    baseDomain: string
+    /** @deprecated 仅用于认证存储迁移期间的旧代码兼容 */
     accessToken: string
-    /* 存储刷新token */
+    /** @deprecated 仅用于认证存储迁移期间的旧代码兼容 */
     refreshToken: string
-    /* 存储登录账号 */
-    loginAccount: any
+    /** @deprecated 仅用于认证存储迁移期间的旧代码兼容 */
+    loginAccount: {
+      account: string
+      pwd: string
+    }
     /* 存储当前语言 */
     lang: App.lang
   }

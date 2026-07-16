@@ -8,10 +8,6 @@ namespace Api {
       id: number
       /** 用户角色类型 */
       role: Entity.RoleType
-      /** 访问toekn */
-      accessToken: string
-      /** 刷新toekn */
-      refreshToken: string
     }
   }
 }
