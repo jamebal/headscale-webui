@@ -9,7 +9,7 @@ import NovaIcon from '@/components/common/NovaIcon.vue'
 import CreateApiKeyModel from '@/views/apiKey/createApiKeyModal.vue'
 import { showExpireApiKeyDialog } from '@/views/apiKey/expireApiKeyDialog'
 import { showDeleteApiKeyDialog } from '@/views/apiKey/deleteApiKeyDialog'
-import { local } from '@/utils'
+import { getSessionApiKey } from '@/utils'
 
 const { t } = useI18n()
 
@@ -37,8 +37,8 @@ const columns = computed((): DataTableColumns<ApiKeyData> => [
     title: t('app.prefix'),
     key: 'prefix',
     render(rowData) {
-      const serverUrl = local.get('accessToken')
-      if (serverUrl?.startsWith(rowData.prefix)) {
+      const currentApiKey = getSessionApiKey()
+      if (currentApiKey.startsWith(rowData.prefix)) {
         return h(NTag, {
           style: {
             marginRight: '6px',
