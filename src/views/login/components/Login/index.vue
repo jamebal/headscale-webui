@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { FormInst } from 'naive-ui'
-import { local } from '@/utils'
+import {
+  isValidBaseDomain,
+  local,
+  normalizeBaseDomain,
+} from '@/utils'
 import { useAuthStore } from '@/store'
 
 const authStore = useAuthStore()
@@ -8,12 +12,20 @@ const authStore = useAuthStore()
 const { t } = useI18n()
 const rules = computed(() => {
   return {
-    account: {
+    serverUrl: {
       required: true,
       trigger: 'blur',
       message: t('login.accountRuleTip'),
     },
-    pwd: {
+    baseDomain: {
+      trigger: ['input', 'blur'],
+      validator: (_rule: unknown, value: string) => {
+        return isValidBaseDomain(value)
+          ? true
+          : new Error(t('login.baseDomainRuleTip'))
+      },
+    },
+    apiKey: {
       required: true,
       trigger: 'blur',
       message: t('login.passwordRuleTip'),
@@ -21,10 +33,10 @@ const rules = computed(() => {
   }
 })
 const formValue = ref({
-  account: '',
-  pwd: '',
+  serverUrl: local.get('serverUrl') || '',
+  baseDomain: local.get('baseDomain') || '',
+  apiKey: '',
 })
-const isRemember = ref(false)
 const isLoading = ref(false)
 
 const formRef = ref<FormInst | null>(null)
@@ -34,37 +46,35 @@ function handleLogin() {
       return
 
     isLoading.value = true
-    const { account, pwd } = formValue.value
-
-    if (isRemember.value)
-      local.set('loginAccount', { account, pwd })
-    else local.remove('loginAccount')
-
-    await authStore.login(account, pwd)
+    const { serverUrl, baseDomain, apiKey } = formValue.value
+    await authStore.login(
+      serverUrl.trim(),
+      normalizeBaseDomain(baseDomain),
+      apiKey,
+    )
     isLoading.value = false
   })
-}
-onMounted(() => {
-  checkUserAccount()
-})
-function checkUserAccount() {
-  const loginAccount = local.get('loginAccount')
-  if (!loginAccount)
-    return
-
-  formValue.value = loginAccount
-  isRemember.value = true
 }
 </script>
 
 <template>
   <div>
     <n-form ref="formRef" :rules="rules" :model="formValue" :show-label="false" size="large">
-      <n-form-item path="account">
-        <n-input v-model:value="formValue.account" clearable :placeholder="$t('login.accountPlaceholder')" />
+      <n-form-item path="serverUrl">
+        <n-input v-model:value="formValue.serverUrl" clearable :placeholder="$t('login.accountPlaceholder')" />
       </n-form-item>
-      <n-form-item path="pwd">
-        <n-input v-model:value="formValue.pwd" type="password" :placeholder="$t('login.passwordPlaceholder')" clearable show-password-on="click">
+      <n-form-item path="baseDomain">
+        <n-input v-model:value="formValue.baseDomain" clearable :placeholder="$t('login.baseDomainPlaceholder')" />
+      </n-form-item>
+      <n-form-item path="apiKey">
+        <n-input
+          v-model:value="formValue.apiKey"
+          type="password"
+          autocomplete="off"
+          :placeholder="$t('login.passwordPlaceholder')"
+          clearable
+          show-password-on="click"
+        >
           <template #password-invisible-icon>
             <icon-park-outline-preview-close-one />
           </template>

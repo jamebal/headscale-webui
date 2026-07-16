@@ -59,13 +59,10 @@ export const useAuthStore = defineStore('auth-store', {
     },
 
     /* 用户登录 */
-    async login(serverUrl: string, baseDomain: string, apiKey?: string) {
-      // 登录表单迁移完成前兼容旧的两个参数调用
-      const resolvedBaseDomain = apiKey === undefined ? '' : baseDomain
-      const resolvedApiKey = apiKey ?? baseDomain
-      saveConnectionConfig(serverUrl, resolvedBaseDomain)
-      setSessionApiKey(resolvedApiKey)
-      this.token = resolvedApiKey
+    async login(serverUrl: string, baseDomain: string, apiKey: string) {
+      saveConnectionConfig(serverUrl, baseDomain)
+      setSessionApiKey(apiKey)
+      this.token = apiKey
 
       try {
         const result = await fetchLogin()

@@ -137,8 +137,10 @@
   "login": {
     "signIn": "Sing in",
     "accountPlaceholder": "Enter Server Url",
+    "baseDomainPlaceholder": "Base Domain (optional), for example example.internal",
     "passwordPlaceholder": "Enter ApiKey",
     "accountRuleTip": "Please enter Server Url",
+    "baseDomainRuleTip": "Enter a valid DNS domain without a protocol, port, or path",
     "passwordRuleTip": "Please enter ApiKey"
   },
   "route": {

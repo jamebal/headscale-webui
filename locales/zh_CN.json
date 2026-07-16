@@ -137,8 +137,10 @@
   "login": {
     "signIn": "登录",
     "accountPlaceholder": "输入 Server Url",
+    "baseDomainPlaceholder": "Base Domain（可选），例如 example.internal",
     "passwordPlaceholder": "输入 ApiKey",
     "accountRuleTip": "请输入 Server Url",
+    "baseDomainRuleTip": "请输入合法的 DNS domain，不要包含协议、端口或路径",
     "passwordRuleTip": "请输入 ApiKey"
   },
   "route": {

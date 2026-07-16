@@ -39,15 +39,6 @@ declare namespace Storage {
     userInfo: Api.Login.Info
     serverUrl: string
     baseDomain: string
-    /** @deprecated 仅用于认证存储迁移期间的旧代码兼容 */
-    accessToken: string
-    /** @deprecated 仅用于认证存储迁移期间的旧代码兼容 */
-    refreshToken: string
-    /** @deprecated 仅用于认证存储迁移期间的旧代码兼容 */
-    loginAccount: {
-      account: string
-      pwd: string
-    }
     /* 存储当前语言 */
     lang: App.lang
   }
