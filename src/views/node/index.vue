@@ -25,6 +25,9 @@ const dialog = useDialog()
 
 const { t } = useI18n()
 
+const route = useRoute()
+const router = useRouter()
+
 const nodeList = ref<NodeData[]>([])
 
 const routeList = ref<RouteData[]>([])
@@ -55,7 +58,11 @@ const onlineNumber = computed(() => {
   return nodeList.value.filter(node => node.online).length
 })
 
-const selectUser = ref('')
+function normalizeUserQuery(value: unknown) {
+  return typeof value === 'string' ? value : ''
+}
+
+const selectUser = ref(normalizeUserQuery(route.query.user))
 
 const userOptions = computed(() => {
   const options = userList.value.map(user => ({
@@ -212,18 +219,27 @@ function addRoutePrefixToNodes() {
 }
 
 function handleSelectUser(value: string) {
-  selectUser.value = value
-  renderNodeList()
+  const query = { ...route.query }
+  if (value) {
+    query.user = value
+  }
+  else {
+    delete query.user
+  }
+  router.replace({ query })
 }
 
+let nodeListRequestId = 0
+
 function renderNodeList() {
+  const requestId = ++nodeListRequestId
   fetchNodeList(selectUser.value).then((res) => {
-    if (!res.isSuccess) {
+    if (requestId !== nodeListRequestId || !res.isSuccess) {
       return
     }
     nodeList.value = res.data.nodes
     fetchRouteList().then((res) => {
-      if (!res.isSuccess) {
+      if (requestId !== nodeListRequestId || !res.isSuccess) {
         return
       }
       routeList.value = res.data.routes
@@ -232,12 +248,20 @@ function renderNodeList() {
   })
 }
 
+watch(
+  () => normalizeUserQuery(route.query.user),
+  (user) => {
+    selectUser.value = user
+    renderNodeList()
+  },
+  { immediate: true },
+)
+
 function backfillips() {
   showBackfillipsDialog(dialog, t)
 }
 
 onMounted(() => {
-  renderNodeList()
   fetchUserList().then((res) => {
     if (!res.isSuccess) {
       return
@@ -256,7 +280,7 @@ onMounted(() => {
       <NTag :bordered="false" type="success" round>
         {{ `${onlineNumber} ${t('app.onlines')}` }}
       </NTag>
-      <n-select v-model:value="selectUser" :options="userOptions" style="width: 200px" @update:value="handleSelectUser" />
+      <n-select :value="selectUser" :options="userOptions" style="width: 200px" @update:value="handleSelectUser" />
       <NButton strong type="primary" @click="backfillips">
         {{ t('app.backfillips') }}
       </NButton>

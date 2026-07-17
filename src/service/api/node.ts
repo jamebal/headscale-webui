@@ -31,7 +31,9 @@ export interface NodeData {
 }
 
 export function fetchNodeList(user: string) {
-  return request.Get<Service.ResponseResult<any>>(`/api/v1/node?user=${user}`)
+  return request.Get<Service.ResponseResult<any>>('/api/v1/node', {
+    params: new URLSearchParams({ user }).toString(),
+  })
 }
 
 export function registerNode(param: FormNode) {
