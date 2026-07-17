@@ -119,6 +119,7 @@ const invalidUserQueries: Array<Record<string, string | string[]>> = [
 
 describe('节点用户筛选 URL 同步', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     mocks.fetchNodeList.mockResolvedValue({ isSuccess: true, data: { nodes: [] } })
     mocks.fetchRouteList.mockResolvedValue({ isSuccess: true, data: { routes: [] } })
     mocks.fetchUserList.mockResolvedValue({ isSuccess: true, data: { users: [] } })

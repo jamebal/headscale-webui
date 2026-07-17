@@ -1,3 +1,4 @@
+import { buildCompletedURL } from '@alova/shared'
 import { describe, expect, it, vi } from 'vitest'
 import { fetchNodeList } from '@/service/api/node'
 
@@ -10,11 +11,13 @@ vi.mock('@/service/http/instances', () => ({
 }))
 
 describe('节点 API', () => {
-  it('使用结构化查询参数传递用户名', () => {
-    fetchNodeList('alice&foo=bar')
-
-    expect(mocks.get).toHaveBeenCalledWith('/api/v1/node', {
-      params: { user: 'alice&foo=bar' },
+  it('对用户名中的查询字符串特殊字符进行编码', () => {
+    mocks.get.mockImplementation((url, config) => {
+      return buildCompletedURL('', url, config.params)
     })
+
+    const url = fetchNodeList('alice&foo=bar') as unknown as string
+
+    expect(url).toBe('/api/v1/node?user=alice%26foo%3Dbar')
   })
 })

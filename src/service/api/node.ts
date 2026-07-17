@@ -32,7 +32,7 @@ export interface NodeData {
 
 export function fetchNodeList(user: string) {
   return request.Get<Service.ResponseResult<any>>('/api/v1/node', {
-    params: { user },
+    params: new URLSearchParams({ user }).toString(),
   })
 }
 
