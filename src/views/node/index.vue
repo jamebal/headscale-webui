@@ -229,14 +229,17 @@ function handleSelectUser(value: string) {
   router.replace({ query })
 }
 
+let nodeListRequestId = 0
+
 function renderNodeList() {
+  const requestId = ++nodeListRequestId
   fetchNodeList(selectUser.value).then((res) => {
-    if (!res.isSuccess) {
+    if (requestId !== nodeListRequestId || !res.isSuccess) {
       return
     }
     nodeList.value = res.data.nodes
     fetchRouteList().then((res) => {
-      if (!res.isSuccess) {
+      if (requestId !== nodeListRequestId || !res.isSuccess) {
         return
       }
       routeList.value = res.data.routes

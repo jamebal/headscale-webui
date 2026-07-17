@@ -1,8 +1,10 @@
-import { flushPromises, shallowMount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, shallowMount } from '@vue/test-utils'
 import { defineComponent, reactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import NodeIndex from '@/views/node/index.vue'
+
+enableAutoUnmount(afterEach)
 
 const mocks = vi.hoisted(() => ({
   fetchNodeList: vi.fn(),
@@ -71,6 +73,22 @@ const NSelectStub = defineComponent({
   template: '<button data-testid="user-filter" />',
 })
 
+const NDataTableStub = defineComponent({
+  name: 'NDataTable',
+  props: {
+    data: { type: Array, default: () => [] },
+  },
+  template: '<div data-testid="node-table" />',
+})
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve
+  })
+  return { promise, resolve }
+}
+
 async function mountNodePage(query: Record<string, string | string[]> = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -85,6 +103,7 @@ async function mountNodePage(query: Record<string, string | string[]> = {}) {
       stubs: {
         Space: { template: '<div><slot /></div>' },
         Select: NSelectStub,
+        DataTable: NDataTableStub,
       },
     },
   })
@@ -109,6 +128,7 @@ describe('节点用户筛选 URL 同步', () => {
     const { wrapper } = await mountNodePage({ user: 'alice' })
 
     expect(wrapper.getComponent(NSelectStub).props('value')).toBe('alice')
+    expect(mocks.fetchNodeList).toHaveBeenCalledTimes(1)
     expect(mocks.fetchNodeList).toHaveBeenCalledWith('alice')
   })
 
@@ -129,6 +149,30 @@ describe('节点用户筛选 URL 同步', () => {
     expect(wrapper.getComponent(NSelectStub).props('value')).toBe('bob')
     expect(mocks.fetchNodeList).toHaveBeenCalledTimes(1)
     expect(mocks.fetchNodeList).toHaveBeenCalledWith('bob')
+  })
+
+  it('只应用最近一次用户筛选请求的结果', async () => {
+    const aliceRequest = createDeferred<any>()
+    const bobRequest = createDeferred<any>()
+    mocks.fetchNodeList.mockImplementation((user: string) => {
+      return user === 'alice' ? aliceRequest.promise : bobRequest.promise
+    })
+    const { router, wrapper } = await mountNodePage({ user: 'alice' })
+
+    await router.push({ path: '/node', query: { user: 'bob' } })
+    bobRequest.resolve({ isSuccess: true, data: { nodes: [{ id: 'bob' }] } })
+    await flushPromises()
+
+    expect(wrapper.getComponent(NDataTableStub).props('data')).toEqual([
+      { id: 'bob', routes: [] },
+    ])
+
+    aliceRequest.resolve({ isSuccess: true, data: { nodes: [{ id: 'alice' }] } })
+    await flushPromises()
+
+    expect(wrapper.getComponent(NDataTableStub).props('data')).toEqual([
+      { id: 'bob', routes: [] },
+    ])
   })
 
   it('选择用户时替换 URL 并保留其他查询参数', async () => {
