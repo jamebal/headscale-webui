@@ -26,6 +26,7 @@ const dialog = useDialog()
 const { t } = useI18n()
 
 const route = useRoute()
+const router = useRouter()
 
 const nodeList = ref<NodeData[]>([])
 
@@ -218,8 +219,14 @@ function addRoutePrefixToNodes() {
 }
 
 function handleSelectUser(value: string) {
-  selectUser.value = value
-  renderNodeList()
+  const query = { ...route.query }
+  if (value) {
+    query.user = value
+  }
+  else {
+    delete query.user
+  }
+  router.replace({ query })
 }
 
 function renderNodeList() {
@@ -270,7 +277,7 @@ onMounted(() => {
       <NTag :bordered="false" type="success" round>
         {{ `${onlineNumber} ${t('app.onlines')}` }}
       </NTag>
-      <n-select v-model:value="selectUser" :options="userOptions" style="width: 200px" @update:value="handleSelectUser" />
+      <n-select :value="selectUser" :options="userOptions" style="width: 200px" @update:value="handleSelectUser" />
       <NButton strong type="primary" @click="backfillips">
         {{ t('app.backfillips') }}
       </NButton>

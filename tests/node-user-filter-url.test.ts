@@ -128,4 +128,33 @@ describe('节点用户筛选 URL 同步', () => {
     expect(mocks.fetchNodeList).toHaveBeenCalledTimes(1)
     expect(mocks.fetchNodeList).toHaveBeenCalledWith('bob')
   })
+
+  it('选择用户时替换 URL 并保留其他查询参数', async () => {
+    const { router, wrapper } = await mountNodePage({ tab: 'details' })
+    const replace = vi.spyOn(router, 'replace')
+
+    wrapper.getComponent(NSelectStub).vm.$emit('update:value', 'alice')
+    await flushPromises()
+
+    expect(replace).toHaveBeenCalledWith({
+      query: { tab: 'details', user: 'alice' },
+    })
+    expect(router.currentRoute.value.query).toEqual({
+      tab: 'details',
+      user: 'alice',
+    })
+  })
+
+  it('选择 All 时移除 user 并保留其他查询参数', async () => {
+    const { router, wrapper } = await mountNodePage({ user: 'alice', tab: 'details' })
+    const replace = vi.spyOn(router, 'replace')
+
+    wrapper.getComponent(NSelectStub).vm.$emit('update:value', '')
+    await flushPromises()
+
+    expect(replace).toHaveBeenCalledWith({
+      query: { tab: 'details' },
+    })
+    expect(router.currentRoute.value.query).toEqual({ tab: 'details' })
+  })
 })
