@@ -25,6 +25,8 @@ const dialog = useDialog()
 
 const { t } = useI18n()
 
+const route = useRoute()
+
 const nodeList = ref<NodeData[]>([])
 
 const routeList = ref<RouteData[]>([])
@@ -55,7 +57,11 @@ const onlineNumber = computed(() => {
   return nodeList.value.filter(node => node.online).length
 })
 
-const selectUser = ref('')
+function normalizeUserQuery(value: unknown) {
+  return typeof value === 'string' ? value : ''
+}
+
+const selectUser = ref(normalizeUserQuery(route.query.user))
 
 const userOptions = computed(() => {
   const options = userList.value.map(user => ({
@@ -232,12 +238,20 @@ function renderNodeList() {
   })
 }
 
+watch(
+  () => normalizeUserQuery(route.query.user),
+  (user) => {
+    selectUser.value = user
+    renderNodeList()
+  },
+  { immediate: true },
+)
+
 function backfillips() {
   showBackfillipsDialog(dialog, t)
 }
 
 onMounted(() => {
-  renderNodeList()
   fetchUserList().then((res) => {
     if (!res.isSuccess) {
       return
