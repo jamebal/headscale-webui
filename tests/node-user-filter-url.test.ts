@@ -92,6 +92,12 @@ async function mountNodePage(query: Record<string, string | string[]> = {}) {
   return { router, wrapper }
 }
 
+const invalidUserQueries: Array<Record<string, string | string[]>> = [
+  {},
+  { user: '' },
+  { user: ['alice', 'bob'] },
+]
+
 describe('节点用户筛选 URL 同步', () => {
   beforeEach(() => {
     mocks.fetchNodeList.mockResolvedValue({ isSuccess: true, data: { nodes: [] } })
@@ -106,11 +112,7 @@ describe('节点用户筛选 URL 同步', () => {
     expect(mocks.fetchNodeList).toHaveBeenCalledWith('alice')
   })
 
-  it.each([
-    {},
-    { user: '' },
-    { user: ['alice', 'bob'] },
-  ])('将缺失、空值或数组形式的用户参数视为 All', async (query) => {
+  it.each(invalidUserQueries)('将缺失、空值或数组形式的用户参数视为 All', async (query) => {
     const { wrapper } = await mountNodePage(query)
 
     expect(wrapper.getComponent(NSelectStub).props('value')).toBe('')
