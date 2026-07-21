@@ -12,7 +12,7 @@ const props = defineProps(
 )
 
 const routeCount = props.routes?.length
-const enableCount = props.routes?.filter(route => route?.enabled)?.length
+const enableCount = props.routes?.filter(route => route?.approved)?.length
 
 const { t } = useI18n()
 </script>

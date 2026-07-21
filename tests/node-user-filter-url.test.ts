@@ -8,18 +8,12 @@ enableAutoUnmount(afterEach)
 
 const mocks = vi.hoisted(() => ({
   fetchNodeList: vi.fn(),
-  fetchRouteList: vi.fn(),
   fetchUserList: vi.fn(),
 }))
 
 vi.mock('@/service/api/node', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/service/api/node')>()
   return { ...actual, fetchNodeList: mocks.fetchNodeList }
-})
-
-vi.mock('@/service/api/route', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/service/api/route')>()
-  return { ...actual, fetchRouteList: mocks.fetchRouteList }
 })
 
 vi.mock('@/service/api/user', async (importOriginal) => {
@@ -121,7 +115,6 @@ describe('节点用户筛选 URL 同步', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.fetchNodeList.mockResolvedValue({ isSuccess: true, data: { nodes: [] } })
-    mocks.fetchRouteList.mockResolvedValue({ isSuccess: true, data: { routes: [] } })
     mocks.fetchUserList.mockResolvedValue({ isSuccess: true, data: { users: [] } })
   })
 
@@ -165,14 +158,14 @@ describe('节点用户筛选 URL 同步', () => {
     await flushPromises()
 
     expect(wrapper.getComponent(NDataTableStub).props('data')).toEqual([
-      { id: 'bob', routes: [] },
+      { id: 'bob' },
     ])
 
     aliceRequest.resolve({ isSuccess: true, data: { nodes: [{ id: 'alice' }] } })
     await flushPromises()
 
     expect(wrapper.getComponent(NDataTableStub).props('data')).toEqual([
-      { id: 'bob', routes: [] },
+      { id: 'bob' },
     ])
   })
 

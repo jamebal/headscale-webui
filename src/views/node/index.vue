@@ -4,9 +4,8 @@ import type { DataTableColumns } from 'naive-ui'
 import { NButton, NTag, NTime } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import type { NodeData } from '@/service/api/node'
-import type { RouteData } from '@/service/api/route'
 import { fetchNodeList } from '@/service/api/node'
-import { fetchRouteList } from '@/service/api/route'
+import { deriveRoutes } from '@/service/api/route'
 import type { User } from '@/service/api/user'
 import { fetchUserList } from '@/service/api/user'
 import IconCopy from '~icons/icon-park-outline/copy'
@@ -29,8 +28,6 @@ const route = useRoute()
 const router = useRouter()
 
 const nodeList = ref<NodeData[]>([])
-
-const routeList = ref<RouteData[]>([])
 
 const userList = ref<User[]>([])
 
@@ -87,12 +84,9 @@ const columns = computed((): DataTableColumns<NodeData> => [
     title: t('app.name'),
     key: 'name',
     render(rowData) {
-      let routes: RouteData[] = []
-      let exitNodes: RouteData[] = []
-      if (rowData.routes && rowData.routes.length > 0) {
-        routes = rowData.routes.filter(route => route.isPrimary)
-        exitNodes = rowData.routes.filter(route => !route.isPrimary && route.prefix === '0.0.0.0/0')
-      }
+      const routes = deriveRoutes([rowData])
+      const subnetRoutes = routes.filter(route => !route.exitRoute)
+      const exitRoutes = routes.filter(route => route.exitRoute)
       return h(
         'div',
         { style: { whiteSpace: 'pre-line' } },
@@ -100,14 +94,14 @@ const columns = computed((): DataTableColumns<NodeData> => [
           h('span', rowData.givenName),
           h('br'),
           h('span', { style: { color: 'var(--test-color-fringe)' } }, rowData.name),
-          routes.length > 0
+          subnetRoutes.length > 0
             ? h(NodeSubNetDetails, {
-                routes,
+                routes: subnetRoutes,
               })
             : '',
-          exitNodes.length > 0
+          exitRoutes.length > 0
             ? h(ExitNodeDetails, {
-                routes: exitNodes,
+                routes: exitRoutes,
               })
             : '',
         ],
@@ -199,24 +193,12 @@ const columns = computed((): DataTableColumns<NodeData> => [
           }),
           h(NodeActions, {
             nodeData: row,
-            userList: userList.value,
           }),
         ],
       )
     },
   },
 ])
-
-function addRoutePrefixToNodes() {
-  nodeList.value.forEach((node) => {
-    node.routes = []
-    routeList.value.forEach((route) => {
-      if (route.node.id === node.id) {
-        node.routes.push(route)
-      }
-    })
-  })
-}
 
 function handleSelectUser(value: string) {
   const query = { ...route.query }
@@ -238,13 +220,6 @@ function renderNodeList() {
       return
     }
     nodeList.value = res.data.nodes
-    fetchRouteList().then((res) => {
-      if (requestId !== nodeListRequestId || !res.isSuccess) {
-        return
-      }
-      routeList.value = res.data.routes
-      addRoutePrefixToNodes()
-    })
   })
 }
 

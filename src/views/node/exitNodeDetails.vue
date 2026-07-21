@@ -12,7 +12,7 @@ const props = defineProps(
 )
 
 const enabled = computed(() => {
-  return props.routes.find(r => r.enabled)
+  return props.routes.find(route => route.approved)
 })
 
 const { t } = useI18n()
