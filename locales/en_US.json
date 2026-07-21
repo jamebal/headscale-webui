@@ -147,6 +147,7 @@
     "appRoot": "Home",
     "nodes": "Nodes",
     "apiKeys": "API Keys",
+    "preAuthKeys": "PreAuth Keys",
     "routes": "Routes",
     "users": "Users",
     "policy": "Policy",

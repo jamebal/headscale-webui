@@ -147,6 +147,7 @@
     "appRoot": "首页",
     "nodes": "节点管理",
     "apiKeys": "API Keys",
+    "preAuthKeys": "预授权密钥",
     "routes": "路由管理",
     "users": "用户管理",
     "policy": "策略",

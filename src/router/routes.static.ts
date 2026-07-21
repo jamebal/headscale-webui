@@ -20,6 +20,16 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     pid: null,
   },
   {
+    name: 'preAuthKeys',
+    path: '/preauthkeys',
+    title: 'preAuthKeys',
+    requiresAuth: true,
+    icon: 'carbon:password',
+    componentPath: '/preAuthKey/index.vue',
+    id: 7,
+    pid: null,
+  },
+  {
     name: 'routes',
     path: '/route',
     title: 'routes',
