@@ -4,7 +4,7 @@
 
 将当前仅支持 Headscale v0.25.x 的 WebUI 升级为仅支持 Headscale v0.29.x。此次升级以用户提供的 v0.29 Swagger 为接口契约，不保留 v0.25.x 运行时兼容层。
 
-适配范围包括节点、路由、用户、PreAuthKey、ApiKey、Policy 相关页面和 API 类型。Headscale v0.29 已移除的节点变更所有者能力与独立路由删除能力从界面移除，不模拟后端不存在的行为。
+适配范围包括节点、路由、用户、PreAuthKey、ApiKey、Policy 相关页面和 API 类型。Headscale v0.29 已移除的节点变更所有者能力与独立路由删除能力从界面移除，不模拟后端不存在的行为。PreAuthKey 使用独立资源页面管理，不再从用户管理页进入。
 
 ## 架构选择
 
@@ -42,16 +42,22 @@ Headscale v0.29 Swagger 不包含独立 route delete/enable/disable 接口，因
 
 `User` 类型补齐 v0.29 的 `displayName`、`email`、`providerId`、`provider` 和 `profilePicUrl` 字段。现有创建用户界面仍只要求名称，request 类型允许后续传递 Swagger 支持的可选资料字段，遵循 YAGNI，不在本次增加新表单项。
 
-PreAuthKey 行为调整如下：
+用户管理页只负责用户的创建、重命名和删除，不再包含 PreAuthKey 按钮、用户选择状态或弹窗。
+
+新增 `/preauthkeys` 独立页面，集中管理所有用户的 PreAuthKey。页面列表展示用户、脱敏 key、可复用、临时、已使用、ACL 标签、创建时间和过期时间，并提供用户筛选与隐藏失效项。GET 返回的 key 是脱敏标识，只用于识别记录；列表不提供复制按钮，也不把该值作为可用认证凭据。
+
+PreAuthKey API 与交互调整如下：
 
 - `GET /api/v1/preauthkey` 不再携带旧版 `user` query。
-- API 返回全量 key 后，前端按 `preAuthKey.user.id` 过滤当前用户。
-- 用户页面向 PreAuthKey 组件传递用户 ID 和显示名称，避免混用名称与 ID。
-- 创建请求的 `user` 字段提交 uint64 字符串形式的用户 ID。
+- 页面加载全量 key 后，可按 `preAuthKey.user.id` 在前端筛选用户。
+- 创建表单从用户列表选择用户 ID，请求的 `user` 字段提交 uint64 字符串形式的用户 ID。
 - 过期请求只提交 `{ "id": key.id }`，不再提交 `{ user, key }`。
+- 删除请求使用 `DELETE /api/v1/preauthkey?id={id}`。
 - `PreAuthKeyData.user` 使用完整 `User` 对象类型。
 
-部署页的 key 级联选择器一次加载全量 PreAuthKey，并按用户 ID 分组；继续过滤已过期 key 和不可复用的已使用 key。
+只有创建请求的响应包含完整、可用的 PreAuthKey。创建成功后，弹窗停留在结果状态，展示完整 key 与复制按钮；关闭弹窗时立即清空结果，不写入 store、localStorage 或 sessionStorage，也不能通过 GET 再次恢复。刷新列表使用随后 GET 返回的脱敏 key，不能覆盖弹窗中的一次性完整值。
+
+部署页移除从 GET 列表加载 key 的级联选择器，改为密码输入框，由用户粘贴创建时保存的完整 key。这样不会把脱敏值写入 `tailscale up --auth-key`。
 
 ## 其他 API 类型
 
@@ -66,8 +72,10 @@ ApiKey 保持 prefix 过期与删除流程，但补齐明确 response 类型。P
 - API 合约测试验证 HTTP method、编码后的 URL、query、request body 和 response 类型调用方式。
 - 路由领域测试验证节点路由展平、出口路由识别、审批状态，以及启用/停用时不会丢失其他已审批路由。
 - PreAuthKey 测试验证全量请求、按用户 ID 过滤、创建使用用户 ID、过期使用 key ID。
+- PreAuthKey 页面测试验证独立路由、用户筛选、脱敏 key 不可复制、完整 key 只在创建结果中出现、关闭后清空，以及按 ID 过期和删除。
 - 节点页面测试验证只依赖节点响应，不再请求旧 `/api/v1/routes`，并继续保证较旧请求不会覆盖新筛选结果。
 - 组件测试验证节点菜单不再出现变更所有者操作，标签编辑使用 `node.tags`。
+- 用户页面测试验证不再包含 PreAuthKey 入口；部署页面测试验证不再请求 PreAuthKey GET，并使用手动密钥输入。
 
 完成后运行 `npm test`、`npm run lint` 和 `npm run build`。只有三项均通过，才认为 v0.29 适配完成。
 
@@ -77,4 +85,7 @@ ApiKey 保持 prefix 过期与删除流程，但补齐明确 response 类型。P
 - 节点、路由、用户、PreAuthKey、ApiKey 和 Policy 的现有受支持操作与 v0.29 request/response 契约一致。
 - 路由审批不会覆盖同节点其他审批项。
 - 不再向用户呈现节点变更所有者或路由删除等后端不支持的操作。
+- PreAuthKey 通过独立页面管理，用户页不再承担该职责。
+- GET 返回的脱敏 PreAuthKey 永远不会作为可复制或可部署的完整凭据。
+- 新建返回的完整 PreAuthKey 只在创建弹窗当前生命周期内展示。
 - 自动化测试、lint 和 production build 全部通过。
