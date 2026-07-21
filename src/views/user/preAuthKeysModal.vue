@@ -4,7 +4,7 @@ import { NButton, NTag, NTime } from 'naive-ui'
 import { onMounted } from 'vue'
 import { useAppStore } from '@/store'
 import type { PreAuthKeyData } from '@/service'
-import { fetchPreAuthKeyList } from '@/service'
+import { fetchPreAuthKeyList, filterPreAuthKeysByUser } from '@/service'
 import CopyText from '@/components/custom/CopyText.vue'
 import CreatePreAuthKeyModal from '@/views/user/createPreAuthKeyModal.vue'
 import NovaIcon from '@/components/common/NovaIcon.vue'
@@ -18,6 +18,10 @@ const props = defineProps(
       default: false,
     },
     user: {
+      type: String,
+      default: '',
+    },
+    userId: {
       type: String,
       default: '',
     },
@@ -50,7 +54,7 @@ const createPreAuthKeyModalVisible = ref(false)
 
 watch(() => appStore.message, (newMessage) => {
   if (newMessage?.event === 'refreshPreAuthKeyList') {
-    getPreAuthKeys(props.user)
+    getPreAuthKeys(props.userId)
   }
 })
 
@@ -62,22 +66,22 @@ watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
   formModal.value.name = ''
   setTimeout(() => {
-    getPreAuthKeys(props.user)
+    getPreAuthKeys(props.userId)
   }, 0)
 })
 
-function getPreAuthKeys(user: string) {
-  if (!user) {
+function getPreAuthKeys(userId: string) {
+  if (!userId) {
     preAuthKeyList.value = []
     return
   }
   preAuthKeyListLoading.value = true
-  fetchPreAuthKeyList(user).then((res) => {
+  fetchPreAuthKeyList().then((res) => {
     preAuthKeyListLoading.value = false
     if (!res.isSuccess) {
       return
     }
-    preAuthKeyList.value = res.data.preAuthKeys
+    preAuthKeyList.value = filterPreAuthKeysByUser(res.data.preAuthKeys, userId)
 
     if (hideInvalid.value) {
       const currentTime = new Date().getTime()
@@ -91,7 +95,7 @@ function afterLeave() {
 }
 
 function handleHideInvalidChange() {
-  getPreAuthKeys(props.user)
+  getPreAuthKeys(props.userId)
 }
 
 const columns = computed((): DataTableColumns<PreAuthKeyData> => [
@@ -205,7 +209,7 @@ const columns = computed((): DataTableColumns<PreAuthKeyData> => [
             size: 'small',
             type: 'warning',
             onClick() {
-              showExpirePreAuthKeyDialog(dialog, t, row.user, row.key)
+              showExpirePreAuthKeyDialog(dialog, t, row.id, row.key)
             },
           }, {
             default: () => t('app.expire'),
@@ -217,7 +221,7 @@ const columns = computed((): DataTableColumns<PreAuthKeyData> => [
 ])
 
 onMounted(() => {
-  getPreAuthKeys(props.user)
+  getPreAuthKeys(props.userId)
 })
 </script>
 
@@ -259,7 +263,7 @@ onMounted(() => {
         :columns="columns"
         :data="preAuthKeyList"
       />
-      <CreatePreAuthKeyModal v-model:show="createPreAuthKeyModalVisible" :user="user" />
+      <CreatePreAuthKeyModal v-model:show="createPreAuthKeyModalVisible" :user-id="userId" :user-name="user" />
     </template>
   </n-modal>
 </template>

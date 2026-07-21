@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { CascaderOption } from 'naive-ui'
 import { NTag } from 'naive-ui'
-import type { User } from '@/service'
-import { fetchPreAuthKeyList, fetchUserList } from '@/service'
+import type { PreAuthKeyData, User } from '@/service'
+import { fetchPreAuthKeyList, fetchUserList, filterPreAuthKeysByUser } from '@/service'
 
 const props = defineProps(
   {
@@ -26,41 +26,40 @@ const authKeyCascaderOptions = ref([
 ])
 
 const modelValue = ref(props.value)
+const allPreAuthKeys = ref<PreAuthKeyData[]>()
 
 watch(modelValue, (newVal) => {
   emit('update:value', newVal)
 })
 
-function handleAuthKeyCascaderLoad(option: CascaderOption) {
-  return new Promise<void>((resolve) => {
-    const user: string = option.value as string
-    fetchPreAuthKeyList(user).then((res) => {
-      if (!res.isSuccess) {
-        return
-      }
-      const preAuthKeys = res.data.preAuthKeys.filter((authKey) => {
-        const expiryTime = new Date(authKey.expiration).getTime()
-        return expiryTime >= new Date().getTime() && (!authKey.used || authKey.reusable)
-      })
-      option.children = preAuthKeys.map((authKey) => {
-        return {
-          label: authKey.key,
-          value: authKey.key,
-          key: true,
-          used: authKey.used,
-          reusable: authKey.reusable,
-          ephemeral: authKey.ephemeral,
-          isLeaf: true,
-        }
-      })
-      // 在option.children的第一个元素前插入一个空元素，用于触发重新加载
-      option.children.unshift({
-        label: `${preAuthKeys.length} Valid Key(s)`,
-        value: '',
-        isLeaf: true,
-      })
-      resolve()
+async function handleAuthKeyCascaderLoad(option: CascaderOption) {
+  if (!allPreAuthKeys.value) {
+    const result = await fetchPreAuthKeyList()
+    if (!result.isSuccess) {
+      option.children = []
+      return
+    }
+    allPreAuthKeys.value = result.data.preAuthKeys
+  }
+  const userId = String(option.value)
+  const preAuthKeys = filterPreAuthKeysByUser(allPreAuthKeys.value, userId)
+    .filter((authKey) => {
+      const expiryTime = new Date(authKey.expiration).getTime()
+      return expiryTime >= new Date().getTime() && (!authKey.used || authKey.reusable)
     })
+  option.children = preAuthKeys.map(authKey => ({
+    label: authKey.key,
+    value: authKey.key,
+    key: true,
+    used: authKey.used,
+    reusable: authKey.reusable,
+    ephemeral: authKey.ephemeral,
+    isLeaf: true,
+  }))
+  option.children.unshift({
+    label: `${preAuthKeys.length} Valid Key(s)`,
+    value: '',
+    isLeaf: true,
   })
 }
 
@@ -108,7 +107,7 @@ async function getUserList() {
   }
   authKeyCascaderOptions.value = res.data.users.map((user: User) => ({
     label: user.name,
-    value: user.name,
+    value: user.id,
     depth: 1,
     isLeaf: false,
   }))

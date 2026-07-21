@@ -39,7 +39,7 @@ const node = {
   approvedRoutes: [],
   availableRoutes: [],
   subnetRoutes: [],
-} as NodeData
+} as unknown as NodeData
 
 describe('v0.29 节点操作界面', () => {
   it('不再提供节点变更所有者操作', () => {
@@ -54,8 +54,8 @@ describe('v0.29 节点操作界面', () => {
       },
     })
 
-    const labels = wrapper.getComponent(NDropdown)
-      .props('options')
+    const options = wrapper.getComponent(NDropdown).props('options') ?? []
+    const labels = (options as unknown as Array<{ label?: string }>)
       .map((option: { label?: string }) => option.label)
     expect(labels).not.toContain('app.changeOwner')
   })

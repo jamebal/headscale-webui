@@ -7,7 +7,7 @@ const appStore = useAppStore()
 export function showExpirePreAuthKeyDialog(
   dialog: DialogApiInjection,
   t: (key: string) => string,
-  user: string,
+  id: string,
   key: string,
 ) {
   const d = dialog.warning({
@@ -17,7 +17,7 @@ export function showExpirePreAuthKeyDialog(
     negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       d.loading = true
-      const result = await expirePreAuthKey(user, key)
+      const result = await expirePreAuthKey(id)
       if (!result || !result.isSuccess) {
         return
       }

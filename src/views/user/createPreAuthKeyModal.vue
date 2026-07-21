@@ -12,7 +12,11 @@ const props = defineProps(
       type: Boolean,
       default: false,
     },
-    user: {
+    userId: {
+      type: String,
+      default: '',
+    },
+    userName: {
       type: String,
       default: '',
     },
@@ -48,7 +52,7 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
-  formModal.value.user = props.user
+  formModal.value.user = props.userId
   timestamp.value = new Date().getTime() + 1000 * 60 * 60 * 24
   formModal.value.reusable = false
   formModal.value.ephemeral = false
@@ -111,7 +115,7 @@ const handleCreate: (label: string) => { label: string, value: string } = label 
     v-model:show="modalVisible"
     :mask-closable="false"
     preset="card"
-    :title="`${t('app.createPreAuthKey')} - ${user}`"
+    :title="`${t('app.createPreAuthKey')} - ${userName}`"
     class="w-720px"
     :segmented="{
       content: true,

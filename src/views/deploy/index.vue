@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useClipboard } from '@vueuse/core'
 import { local } from '@/utils'
 import AuthKeyCascader from '@/views/deploy/authKeyCascader.vue'
-import { fetchRouteList } from '@/service'
+import { deriveRoutes, fetchNodeList } from '@/service'
 import { handleTagCreate } from '@/utils/tags'
 
 const { copy } = useClipboard()
@@ -78,12 +78,12 @@ function renderCodeText() {
 
 function renderExitNodeOptions() {
   exitNodeOptions.value = []
-  fetchRouteList().then((res) => {
+  fetchNodeList('').then((res) => {
     if (!res.isSuccess) {
       return
     }
-    res.data.routes.forEach((route) => {
-      if (route.enabled && route.advertised && route.prefix === '0.0.0.0/0') {
+    deriveRoutes(res.data.nodes).forEach((route) => {
+      if (route.approved && route.exitRoute) {
         exitNodeOptions.value.push({
           label: route.node.givenName,
           value: route.node.givenName,

@@ -138,7 +138,7 @@ onMounted(() => {
     />
     <CreateUserModal v-model:show="createUserModalVisible" />
     <RenameUserModal :id="selectUserId" v-model:show="renameUserModalVisible" :user="selectUsername" />
-    <PreAuthKeysModal v-model:show="preAuthKeysModalVisible" :user="selectUsername" />
+    <PreAuthKeysModal v-model:show="preAuthKeysModalVisible" :user="selectUsername" :user-id="selectUserId" />
   </n-space>
 </template>
 

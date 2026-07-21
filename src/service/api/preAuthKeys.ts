@@ -1,4 +1,5 @@
 import { getRequestInstance } from '../http/instances'
+import type { User } from './user'
 
 const request = getRequestInstance()
 
@@ -12,7 +13,7 @@ export interface PreAuthKeyFormData {
 
 export interface PreAuthKeyData {
   id: string
-  user: string
+  user: User
   key: string
   reusable: boolean
   ephemeral: boolean
@@ -22,14 +23,18 @@ export interface PreAuthKeyData {
   aclTags: string[]
 }
 
-export function fetchPreAuthKeyList(user: string) {
-  return request.Get<Service.ResponseResult<{ preAuthKeys: PreAuthKeyData[] }>>(`/api/v1/preauthkey?user=${user}`)
+export function fetchPreAuthKeyList() {
+  return request.Get<Service.ResponseResult<{ preAuthKeys: PreAuthKeyData[] }>>('/api/v1/preauthkey')
 }
 
 export function createPreAuthKey(preAuthKeyData: PreAuthKeyFormData) {
   return request.Post<Service.ResponseResult<{ preAuthKey: PreAuthKeyData }>>(`/api/v1/preauthkey`, preAuthKeyData)
 }
 
-export function expirePreAuthKey(user: string, key: string) {
-  return request.Post<Service.ResponseResult<any>>(`/api/v1/preauthkey/expire`, { user, key })
+export function expirePreAuthKey(id: string) {
+  return request.Post<Service.ResponseResult<Record<string, never>>>('/api/v1/preauthkey/expire', { id })
+}
+
+export function filterPreAuthKeysByUser(keys: PreAuthKeyData[], userId: string) {
+  return keys.filter(key => key.user.id === userId)
 }
