@@ -35,6 +35,13 @@ export function expirePreAuthKey(id: string) {
   return request.Post<Service.ResponseResult<Record<string, never>>>('/api/v1/preauthkey/expire', { id })
 }
 
+export function deletePreAuthKey(id: string) {
+  const params = new URLSearchParams({ id })
+  return request.Delete<Service.ResponseResult<Record<string, never>>>(
+    `/api/v1/preauthkey?${params.toString()}`,
+  )
+}
+
 export function filterPreAuthKeysByUser(keys: PreAuthKeyData[], userId: string) {
   return keys.filter(key => key.user.id === userId)
 }

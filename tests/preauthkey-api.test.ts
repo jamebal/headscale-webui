@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createPreAuthKey,
+  deletePreAuthKey,
   expirePreAuthKey,
   fetchPreAuthKeyList,
   filterPreAuthKeysByUser,
@@ -10,12 +11,14 @@ import type { PreAuthKeyData } from '@/service/api/preAuthKeys'
 const mocks = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
+  delete: vi.fn(),
 }))
 
 vi.mock('@/service/http/instances', () => ({
   getRequestInstance: () => ({
     Get: mocks.get,
     Post: mocks.post,
+    Delete: mocks.delete,
   }),
 }))
 
@@ -65,5 +68,13 @@ describe('v0.29 PreAuthKey API', () => {
 
   it('按用户 ID 过滤全量 key', () => {
     expect(filterPreAuthKeysByUser(keys, '12')).toEqual([keys[0]])
+  })
+
+  it('按 key ID 删除预授权密钥并编码 query', () => {
+    deletePreAuthKey('99&confirmed=true')
+
+    expect(mocks.delete).toHaveBeenCalledWith(
+      '/api/v1/preauthkey?id=99%26confirmed%3Dtrue',
+    )
   })
 })
