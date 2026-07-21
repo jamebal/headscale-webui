@@ -10,7 +10,6 @@ import { showDeleteUserDialog } from '@/views/user/deleteUserDialog'
 import NovaIcon from '@/components/common/NovaIcon.vue'
 import CreateUserModal from '@/views/user/createUserModal.vue'
 import RenameUserModal from '@/views/user/renameUserModal.vue'
-import PreAuthKeysModal from '@/views/user/preAuthKeysModal.vue'
 
 const { t } = useI18n()
 
@@ -28,7 +27,6 @@ const dialog = useDialog()
 
 const createUserModalVisible = ref(false)
 const renameUserModalVisible = ref(false)
-const preAuthKeysModalVisible = ref(false)
 const selectUsername = ref('')
 const selectUserId = ref('')
 
@@ -61,18 +59,6 @@ const columns = computed((): DataTableColumns<User> => [
         'div',
         { style: { display: 'flex', justifyContent: 'space-evenly' } },
         [
-          h(NButton, {
-            secondary: true,
-            size: 'small',
-            type: 'default',
-            onClick() {
-              selectUsername.value = rowData.name
-              selectUserId.value = rowData.id
-              preAuthKeysModalVisible.value = true
-            },
-          }, {
-            default: () => t('app.preAuthKeys'),
-          }),
           h(NButton, {
             secondary: true,
             size: 'small',
@@ -138,7 +124,6 @@ onMounted(() => {
     />
     <CreateUserModal v-model:show="createUserModalVisible" />
     <RenameUserModal :id="selectUserId" v-model:show="renameUserModalVisible" :user="selectUsername" />
-    <PreAuthKeysModal v-model:show="preAuthKeysModalVisible" :user="selectUsername" :user-id="selectUserId" />
   </n-space>
 </template>
 

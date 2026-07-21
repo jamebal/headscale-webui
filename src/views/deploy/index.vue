@@ -2,7 +2,6 @@
 import { onMounted } from 'vue'
 import { useClipboard } from '@vueuse/core'
 import { local } from '@/utils'
-import AuthKeyCascader from '@/views/deploy/authKeyCascader.vue'
 import { deriveRoutes, fetchNodeList } from '@/service'
 import { handleTagCreate } from '@/utils/tags'
 
@@ -292,7 +291,13 @@ onMounted(() => {
                     </div>
                   </div>
                 </n-checkbox>
-                <AuthKeyCascader v-if="options.includes('--auth-key')" v-model:value="authKey" @update-value="onAuthKeyUpdate" />
+                <n-input
+                  v-if="options.includes('--auth-key')"
+                  v-model:value="authKey"
+                  type="password"
+                  show-password-on="click"
+                  @update-value="onAuthKeyUpdate"
+                />
               </n-flex>
             </n-gi>
             <n-gi class="pl-20 md-440">
