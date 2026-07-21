@@ -1,32 +1,34 @@
-import { getRequestInstance } from '../http/instances'
 import type { NodeData } from '@/service/api/node'
 
-const request = getRequestInstance()
-
 export interface RouteData {
-  id: string
+  key: string
   node: NodeData
   prefix: string
-  advertised: boolean
-  enabled: boolean
-  isPrimary: boolean
-  createdAt: string
-  updatedAt: string
-  deletedAt: string
+  approved: boolean
+  exitRoute: boolean
 }
 
-export function fetchRouteList() {
-  return request.Get<Service.ResponseResult<{ routes: RouteData[] }>>('/api/v1/routes')
+export function deriveRoutes(nodes: NodeData[]): RouteData[] {
+  return nodes.flatMap(node => node.availableRoutes.map(prefix => ({
+    key: `${node.id}:${prefix}`,
+    node,
+    prefix,
+    approved: node.approvedRoutes.includes(prefix),
+    exitRoute: prefix === '0.0.0.0/0' || prefix === '::/0',
+  })))
 }
 
-export function deleteRoute(routeId: string) {
-  return request.Delete<Service.ResponseResult<any>>(`/api/v1/routes/${routeId}`)
-}
-
-export function disableRoute(routeId: string) {
-  return request.Post<Service.ResponseResult<any>>(`/api/v1/routes/${routeId}/disable`)
-}
-
-export function enableRoute(routeId: string) {
-  return request.Post<Service.ResponseResult<any>>(`/api/v1/routes/${routeId}/enable`)
+export function buildApprovedRoutes(
+  node: NodeData,
+  prefix: string,
+  approved: boolean,
+): string[] {
+  const routes = new Set(node.approvedRoutes)
+  if (approved) {
+    routes.add(prefix)
+  }
+  else {
+    routes.delete(prefix)
+  }
+  return [...routes]
 }
