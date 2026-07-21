@@ -10,6 +10,7 @@ import { fetchUserList } from '@/service/api/user'
 import { useAppStore } from '@/store'
 import { showExpirePreAuthKeyDialog } from '@/views/preAuthKey/expirePreAuthKeyDialog'
 import { showDeletePreAuthKeyDialog } from '@/views/preAuthKey/deletePreAuthKeyDialog'
+import CreatePreAuthKeyModal from '@/views/preAuthKey/createPreAuthKeyModal.vue'
 
 const { t } = useI18n()
 const dialog = useDialog()
@@ -20,6 +21,7 @@ const users = ref<User[]>([])
 const selectedUserId = ref('')
 const hideInvalid = ref(true)
 const loading = ref(false)
+const createModalVisible = ref(false)
 
 const userOptions = computed(() => [
   { label: 'All', value: '' },
@@ -147,6 +149,11 @@ onMounted(() => {
         {{ t('app.hideInvalid') }}
         <n-switch v-model:value="hideInvalid" />
       </div>
+      <n-space class="ml-a">
+        <NButton strong type="primary" @click="createModalVisible = true">
+          {{ t('app.createPreAuthKey') }}
+        </NButton>
+      </n-space>
     </div>
     <n-data-table
       striped
@@ -154,6 +161,11 @@ onMounted(() => {
       :columns="columns"
       :data="visiblePreAuthKeys"
       :row-key="(row: PreAuthKeyData) => row.id"
+    />
+    <CreatePreAuthKeyModal
+      v-model:show="createModalVisible"
+      :users="users"
+      @created="renderPage"
     />
   </n-space>
 </template>
