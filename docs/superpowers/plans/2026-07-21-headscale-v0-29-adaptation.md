@@ -486,3 +486,290 @@ git commit -m "docs: 声明 Headscale v0.29 兼容系列"
 
 预期：只包含计划内尚未提交的文件；若任务均按步骤提交，则工作区为空。
 
+## 补充范围：PreAuthKey 独立页面与脱敏语义
+
+以下任务落实后续确认的交互调整。它们建立在任务 1 至任务 7 的 v0.29 API 迁移之上。
+
+### 任务 8：补齐 PreAuthKey 删除 API
+
+**文件：**
+- 修改：`tests/preauthkey-api.test.ts`
+- 修改：`src/service/api/preAuthKeys.ts`
+
+- [ ] **步骤 1：编写失败的删除 API 合约测试**
+
+给 request mock 增加 `Delete`，并新增：
+
+```ts
+it('按 key ID 删除预授权密钥', () => {
+  deletePreAuthKey('99')
+
+  expect(mocks.delete).toHaveBeenCalledWith('/api/v1/preauthkey?id=99')
+})
+```
+
+再用包含特殊字符的 ID 验证 `URLSearchParams` 编码，避免直接拼接 query。
+
+- [ ] **步骤 2：运行测试并确认缺少删除函数而失败**
+
+运行：`npm test -- tests/preauthkey-api.test.ts`
+
+预期：测试因 `deletePreAuthKey is not a function` 失败。
+
+- [ ] **步骤 3：实现最小删除 API**
+
+```ts
+export function deletePreAuthKey(id: string) {
+  const params = new URLSearchParams({ id })
+  return request.Delete<Service.ResponseResult<Record<string, never>>>(
+    `/api/v1/preauthkey?${params.toString()}`,
+  )
+}
+```
+
+- [ ] **步骤 4：运行测试并确认通过**
+
+运行：`npm test -- tests/preauthkey-api.test.ts`
+
+预期：全部通过。
+
+- [ ] **步骤 5：提交 API 变更**
+
+```bash
+git add tests/preauthkey-api.test.ts src/service/api/preAuthKeys.ts
+git commit -m "feat: 添加 v0.29 PreAuthKey 删除接口"
+```
+
+### 任务 9：新增 PreAuthKey 独立列表页
+
+**文件：**
+- 新增：`tests/preauthkey-page.test.ts`
+- 修改：`src/router/routes.static.ts`
+- 修改：`locales/zh_CN.json`
+- 修改：`locales/en_US.json`
+- 新增：`src/views/preAuthKey/index.vue`
+- 新增：`src/views/preAuthKey/expirePreAuthKeyDialog.ts`
+- 新增：`src/views/preAuthKey/deletePreAuthKeyDialog.ts`
+
+- [ ] **步骤 1：编写失败的路由与页面测试**
+
+`tests/preauthkey-page.test.ts` 首先验证静态路由：
+
+```ts
+expect(staticRoutes).toContainEqual(expect.objectContaining({
+  name: 'preAuthKeys',
+  path: '/preauthkeys',
+  componentPath: '/preAuthKey/index.vue',
+}))
+```
+
+挂载页面并 mock `fetchPreAuthKeyList`、`fetchUserList`，给 GET 返回 `key: 'hskey-auth-********'`，断言表格数据保留该脱敏值、页面没有 CopyText 组件，并验证用户筛选只保留 `key.user.id` 匹配项。
+
+- [ ] **步骤 2：运行测试并确认路由和页面缺失**
+
+运行：`npm test -- tests/preauthkey-page.test.ts`
+
+预期：测试因缺少 `/preauthkeys` 路由或页面模块而失败。
+
+- [ ] **步骤 3：增加导航和翻译**
+
+在 `staticRoutes` 的 users 后加入：
+
+```ts
+{
+  name: 'preAuthKeys',
+  path: '/preauthkeys',
+  title: 'preAuthKeys',
+  requiresAuth: true,
+  icon: 'carbon:password',
+  componentPath: '/preAuthKey/index.vue',
+  id: 7,
+  pid: null,
+}
+```
+
+在中英文 `route` 翻译中增加 `preAuthKeys`。
+
+- [ ] **步骤 4：实现独立列表页**
+
+页面加载 `fetchPreAuthKeyList()` 和 `fetchUserList()`；表格列包含 ID、用户、脱敏 key、reusable、ephemeral、used、ACL 标签、createdAt、expiration 和 action。key 列只返回普通文本：
+
+```ts
+{
+  title: t('app.key'),
+  key: 'key',
+  render: row => row.key,
+}
+```
+
+页面用 `selectedUserId` 和 `hideInvalid` 计算过滤后的 `visiblePreAuthKeys`。操作列调用按 ID 过期和删除对话框，成功后广播 `refreshPreAuthKeyList`。
+
+- [ ] **步骤 5：运行页面测试并确认通过**
+
+运行：`npm test -- tests/preauthkey-page.test.ts`
+
+预期：路由、脱敏显示与用户筛选测试全部通过。
+
+- [ ] **步骤 6：提交独立页面**
+
+```bash
+git add tests/preauthkey-page.test.ts src/router/routes.static.ts locales src/views/preAuthKey
+git commit -m "feat: 添加 PreAuthKey 独立管理页面"
+```
+
+### 任务 10：实现创建结果的一次性完整 key
+
+**文件：**
+- 新增：`tests/create-preauthkey-modal.test.ts`
+- 新增：`src/views/preAuthKey/createPreAuthKeyModal.vue`
+- 修改：`src/views/preAuthKey/index.vue`
+
+- [ ] **步骤 1：编写失败的一次性密钥测试**
+
+mock `createPreAuthKey` 返回：
+
+```ts
+{
+  isSuccess: true,
+  data: {
+    preAuthKey: {
+      id: '99',
+      key: 'hskey-auth-full-secret',
+      user: { id: '12', name: 'alice' },
+    },
+  },
+}
+```
+
+挂载创建弹窗，提交后断言完整 key 出现在 success alert；触发复制只复制这个 POST 响应值；关闭并再次打开后断言完整 key 不再存在。测试同时断言 GET 列表数据不会作为弹窗结果传入。
+
+- [ ] **步骤 2：运行测试并确认创建组件缺失**
+
+运行：`npm test -- tests/create-preauthkey-modal.test.ts`
+
+预期：测试因缺少新组件或结果状态而失败。
+
+- [ ] **步骤 3：实现创建与结果双状态弹窗**
+
+创建组件接收 `users: User[]`。表单状态包含 `user` ID、expiration、reusable、ephemeral 和 aclTags；POST 成功后：
+
+```ts
+createdKey.value = result.data.preAuthKey.key
+emit('created')
+```
+
+只有 `createdKey` 非空时渲染 success alert 和复制按钮。`closeModal()` 必须执行：
+
+```ts
+createdKey.value = ''
+modalVisible.value = false
+```
+
+禁止把 `createdKey` 写入 store 或 Web Storage。
+
+- [ ] **步骤 4：运行一次性密钥测试并确认通过**
+
+运行：`npm test -- tests/create-preauthkey-modal.test.ts`
+
+预期：完整 key 展示、复制与关闭清空测试全部通过。
+
+- [ ] **步骤 5：提交创建流程**
+
+```bash
+git add tests/create-preauthkey-modal.test.ts src/views/preAuthKey
+git commit -m "feat: 一次性展示新建 PreAuthKey 完整值"
+```
+
+### 任务 11：移除用户页入口并改造部署密钥输入
+
+**文件：**
+- 新增：`tests/preauthkey-entrypoints.test.ts`
+- 修改：`src/views/user/index.vue`
+- 修改：`src/views/deploy/index.vue`
+- 删除：`src/views/deploy/authKeyCascader.vue`
+- 删除：`src/views/user/preAuthKeysModal.vue`
+- 删除：`src/views/user/createPreAuthKeyModal.vue`
+- 删除：`src/views/user/preAuthKeyDetails.vue`
+- 删除：`src/views/user/expirePreAuthKeyDialog.ts`
+
+- [ ] **步骤 1：编写失败的入口回归测试**
+
+测试挂载用户页，断言 action 列不含 `app.preAuthKeys`，也不存在 `PreAuthKeysModal`。挂载部署页，mock `fetchPreAuthKeyList`，断言它从未调用，并验证 auth key 控件是 `type="password"` 的输入框。
+
+- [ ] **步骤 2：运行测试并确认旧入口仍存在**
+
+运行：`npm test -- tests/preauthkey-entrypoints.test.ts`
+
+预期：用户页仍有 PreAuthKey 按钮，部署页仍渲染级联选择器，因此失败。
+
+- [ ] **步骤 3：移除用户页 PreAuthKey 状态与旧组件**
+
+从用户页删除 `PreAuthKeysModal` import、`preAuthKeysModalVisible`、选中用户时打开弹窗的按钮和模板组件。删除 `src/views/user` 下四个仅服务旧入口的文件。
+
+- [ ] **步骤 4：把部署页改为手动密码输入**
+
+删除 `AuthKeyCascader` import 和文件。原 `--auth-key` 控件改为：
+
+```vue
+<n-input
+  v-if="options.includes('--auth-key')"
+  v-model:value="authKey"
+  type="password"
+  show-password-on="click"
+  @update-value="onAuthKeyUpdate"
+/>
+```
+
+页面不再调用 `fetchPreAuthKeyList`，只把用户粘贴的完整 key 写入当前生成命令。
+
+- [ ] **步骤 5：运行入口回归测试并确认通过**
+
+运行：`npm test -- tests/preauthkey-entrypoints.test.ts`
+
+预期：用户页和部署页断言全部通过。
+
+- [ ] **步骤 6：提交入口迁移**
+
+```bash
+git add tests/preauthkey-entrypoints.test.ts src/views/user src/views/deploy
+git commit -m "refactor: 将 PreAuthKey 管理迁移到独立页面"
+```
+
+### 任务 12：补充范围完整验证
+
+**文件：**
+- 检查：全部变更文件
+
+- [ ] **步骤 1：扫描脱敏 key 的危险使用与旧组件残留**
+
+运行：`rg -n 'fetchPreAuthKeyList|AuthKeyCascader|PreAuthKeysModal|CopyText' src/views`
+
+预期：`fetchPreAuthKeyList` 只在独立列表页；列表页不导入 `CopyText`；旧用户弹窗和部署级联选择器不存在。
+
+- [ ] **步骤 2：运行完整验证**
+
+运行：`npm test`
+
+预期：全部 Vitest 测试通过。
+
+运行：`npm run test:release`
+
+预期：全部 release tests 通过。
+
+运行：`npm run lint`
+
+预期：ESLint 与 TypeScript 检查通过。
+
+运行：`npm run build`
+
+预期：production build 成功。
+
+- [ ] **步骤 3：检查差异与工作区**
+
+运行：`git diff --check`
+
+预期：无空白错误。
+
+运行：`git status --short`
+
+预期：工作区 clean。
