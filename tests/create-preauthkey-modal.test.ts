@@ -57,7 +57,7 @@ function mountModal() {
 
 describe('创建 PreAuthKey 的一次性完整值', () => {
   it('只展示并复制 POST 响应中的完整 key，关闭后清空', async () => {
-    window.$message = { success: vi.fn() } as typeof window.$message
+    window.$message = { success: vi.fn() } as unknown as typeof window.$message
     mocks.createPreAuthKey.mockResolvedValue({
       isSuccess: true,
       data: {

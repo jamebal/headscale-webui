@@ -124,9 +124,13 @@ describe('preAuthKey 独立管理页面', () => {
   it('将 GET 返回的脱敏 key 作为普通文本展示', async () => {
     const wrapper = await mountPage()
     const table = wrapper.getComponent(NDataTableStub)
-    const keyColumn = table.props('columns').find((column: { key: string }) => column.key === 'key')
+    const columns = table.props('columns') as unknown as Array<{
+      key: string
+      render?: (row: typeof keys[number]) => unknown
+    }>
+    const keyColumn = columns.find(column => column.key === 'key')
 
-    expect(keyColumn.render(keys[0])).toBe('hskey-auth-********alice')
+    expect(keyColumn?.render?.(keys[0])).toBe('hskey-auth-********alice')
     expect(wrapper.findComponent({ name: 'CopyText' }).exists()).toBe(false)
   })
 
