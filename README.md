@@ -1,16 +1,16 @@
 # headscale-webui
 A Tailscale-compatible orchestration server web front-end for [headscale](https://github.com/juanfont/headscale)
 
-Supported Headscale series: Headscale v0.25.x.
+Supported Headscale series: Headscale v0.29.x.
 
 Choose an image tag based on your upgrade policy:
 
-- `0.0.6-hs0.25` is an immutable tag that pins a fixed WebUI and Headscale compatibility combination.
-- `0.0.6` is the immutable project tag for this WebUI release.
-- `hs0.25` is a movable alias that tracks the latest WebUI release compatible with Headscale v0.25.x.
+- `0.0.7-hs0.29` is an immutable tag that pins a fixed WebUI and Headscale compatibility combination.
+- `0.0.7` is the immutable project tag for this WebUI release.
+- `hs0.29` is a movable alias that tracks the latest WebUI release compatible with Headscale v0.29.x.
 - `latest` tracks the latest WebUI release. `latest` does not guarantee compatibility with older Headscale versions.
 
-For reproducible deployments, pin `0.0.6-hs0.25`. Use `hs0.25` when you want compatible fixes for the same Headscale series. Before upgrading Headscale, verify that the selected image tag supports the target series.
+For reproducible deployments, pin `0.0.7-hs0.29`. Use `hs0.29` when you want compatible fixes for the same Headscale series. Before upgrading Headscale, verify that the selected image tag supports the target series.
 
 ### Some screenshots:
 ![node.png](doc/node.png)
@@ -45,7 +45,7 @@ Netlify is amazing, so if you're in need of somewhere to host your own version o
 ```yaml
 services:
   headscale-webui:
-    image: jmal/headscale-webui:hs0.25
+    image: jmal/headscale-webui:hs0.29
     restart: unless-stopped
     ports:
       - 4567:80

@@ -13,8 +13,8 @@ test('真实 package 与 lockfile 发布版本一致', async () => {
   const metadata = readReleaseMetadata()
   const packageLock = JSON.parse(await readFile(new URL('../package-lock.json', import.meta.url), 'utf8'))
   assert.deepEqual(metadata, {
-    projectVersion: '0.0.6',
-    headscaleCompatibility: '0.25',
+    projectVersion: '0.0.7',
+    headscaleCompatibility: '0.29',
   })
   assert.equal(packageLock.version, metadata.projectVersion)
   assert.equal(packageLock.packages[''].version, metadata.projectVersion)

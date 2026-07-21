@@ -2,7 +2,7 @@
   "name": "headscale-webui",
   "type": "module",
   "version": "0.0.7",
-  "headscaleCompatibility": "0.25",
+  "headscaleCompatibility": "0.29",
   "private": true,
   "description": "A Tailscale-compatible orchestration server web front-end for headscale",
   "author": {
