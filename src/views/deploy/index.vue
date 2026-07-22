@@ -52,7 +52,7 @@ const authKey = ref('')
 const hostname = ref('')
 const timeout = ref('')
 const acceptRisk = ref('')
-const exitNode = ref('')
+const exitNode = ref<string | null>('')
 const netfilterMode = ref<NetfilterMode>('on')
 const qrFormat = ref<QrFormat>('auto')
 
@@ -79,6 +79,7 @@ const qrFormatOptions: Array<{ label: QrFormat, value: QrFormat }> = [
 
 const exitNodeOptions = ref<Array<{ label: string, value: string }>>([])
 const exitNodeOptionsLoaded = ref(false)
+const exitNodeOptionsLoading = ref(false)
 
 function pushBooleanOption(
   target: TailscaleUpOption[],
@@ -95,7 +96,7 @@ function pushRequiredStringOption(
   enabled: boolean,
   value: string,
 ) {
-  if (enabled && value !== '')
+  if (enabled && value.trim() !== '')
     target.push({ name, value })
 }
 
@@ -118,8 +119,8 @@ const deployOptions = computed<TailscaleUpOption[]>(() => {
   pushBooleanOption(result, '--accept-routes', acceptRoutes.value)
   pushRequiredStringOption(result, '--accept-risk', acceptRiskEnabled.value, acceptRisk.value)
   if (exitNodeEnabled.value) {
-    result.push({ name: '--exit-node', value: exitNode.value })
-    if (exitNode.value !== '')
+    result.push({ name: '--exit-node', value: exitNode.value ?? '' })
+    if (exitNode.value)
       pushBooleanOption(result, '--exit-node-allow-lan-access', exitNodeAllowLanAccess.value)
   }
 
@@ -150,7 +151,7 @@ const deployOptions = computed<TailscaleUpOption[]>(() => {
 const code = computed(() => buildTailscaleUpCommand(serverUrl.value, deployOptions.value))
 
 function isRequiredValueMissing(enabled: boolean, value: string) {
-  return enabled && value === ''
+  return enabled && value.trim() === ''
 }
 
 function copyCode() {
@@ -159,20 +160,29 @@ function copyCode() {
 }
 
 async function renderExitNodeOptions() {
-  if (exitNodeOptionsLoaded.value)
+  if (exitNodeOptionsLoaded.value || exitNodeOptionsLoading.value)
     return
 
-  exitNodeOptionsLoaded.value = true
-  const res = await fetchRouteList()
-  if (!res.isSuccess)
-    return
+  exitNodeOptionsLoading.value = true
+  try {
+    const res = await fetchRouteList()
+    if (!res.isSuccess)
+      return
 
-  exitNodeOptions.value = res.data.routes
-    .filter(route => route.enabled && route.advertised && route.prefix === '0.0.0.0/0')
-    .map(route => ({
-      label: route.node.givenName,
-      value: route.node.givenName,
-    }))
+    exitNodeOptions.value = res.data.routes
+      .filter(route => route.enabled && route.advertised && route.prefix === '0.0.0.0/0')
+      .map(route => ({
+        label: route.node.givenName,
+        value: route.node.givenName,
+      }))
+    exitNodeOptionsLoaded.value = true
+  }
+  catch {
+    return
+  }
+  finally {
+    exitNodeOptionsLoading.value = false
+  }
 }
 
 watch(qr, (value) => {
@@ -181,7 +191,7 @@ watch(qr, (value) => {
 })
 
 watch([exitNodeEnabled, exitNode], ([enabled, node]) => {
-  if (!enabled || node === '')
+  if (!enabled || !node)
     exitNodeAllowLanAccess.value = null
   if (enabled)
     void renderExitNodeOptions()
@@ -360,7 +370,7 @@ function downloadStatic() {
               <n-checkbox v-model:checked="exitNodeEnabled" data-testid="exit-node-enable">
                 Exit Node
               </n-checkbox>
-              <n-select v-if="exitNodeEnabled" v-model:value="exitNode" :options="exitNodeOptions" clearable filterable tag />
+              <n-select v-if="exitNodeEnabled" v-model:value="exitNode" data-testid="exit-node-select" :options="exitNodeOptions" clearable filterable tag />
               <BooleanOption
                 v-if="exitNodeEnabled && exitNode"
                 v-model="exitNodeAllowLanAccess"

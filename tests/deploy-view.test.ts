@@ -1,4 +1,4 @@
-import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import DeployView from '@/views/deploy/index.vue'
@@ -75,6 +75,7 @@ const NSelectStub = defineComponent({
   props: {
     value: { type: [String, Number], default: '' },
     options: { type: Array, default: () => [] },
+    clearable: { type: Boolean, default: false },
   },
   emits: ['update:value'],
   template: `
@@ -87,6 +88,14 @@ const NSelectStub = defineComponent({
         {{ option.label }}
       </option>
     </select>
+    <button
+      v-if="clearable"
+      data-testid="select-clear"
+      type="button"
+      @click="$emit('update:value', null)"
+    >
+      clear
+    </button>
   `,
 })
 
@@ -144,6 +153,39 @@ function mountDeployView() {
 
 function command(wrapper: ReturnType<typeof mountDeployView>) {
   return wrapper.get('[data-testid="command-text"]').text()
+}
+
+function availableExitRoute() {
+  return {
+    id: 'route-1',
+    node: {
+      id: 'node-1',
+      name: 'exit-node.example.com',
+      user: { id: 'user-1', name: 'alice', createdAt: '2026-01-01T00:00:00Z' },
+      ipAddresses: ['100.64.0.1'],
+      routes: [],
+      online: true,
+      givenName: 'exit-node-1',
+      validTags: [],
+      invalidTags: [],
+      forcedTags: [],
+      registerMethod: 'authKey',
+      createdAt: '2026-01-01T00:00:00Z',
+      preAuthKey: '',
+      expiry: '2027-01-01T00:00:00Z',
+      lastSeen: '2026-01-01T00:00:00Z',
+      machineKey: 'mkey:machine',
+      nodeKey: 'nodekey:node',
+      discoKey: 'discokey:disco',
+    },
+    prefix: '0.0.0.0/0',
+    advertised: true,
+    enabled: true,
+    isPrimary: true,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+    deletedAt: '',
+  }
 }
 
 async function setBoolean(wrapper: ReturnType<typeof mountDeployView>, testId: string, value: 'unset' | 'true' | 'false') {
@@ -206,6 +248,7 @@ describe('常规部署参数', () => {
     const wrapper = mountDeployView()
 
     await wrapper.get('[data-testid="hostname-enable"]').setValue(true)
+    await wrapper.get('[data-testid="hostname-input"]').setValue('   ')
 
     expect(command(wrapper)).not.toContain('--hostname=')
     expect(wrapper.get('[data-testid="hostname-input"]').attributes('data-status')).toBe('error')
@@ -227,5 +270,58 @@ describe('常规部署参数', () => {
     expect(command(wrapper)).toContain('--snat-subnet-routes=false')
     expect(command(wrapper)).toContain('--stateful-filtering')
     expect(command(wrapper)).toContain('--json=false')
+  })
+
+  it('清空出口节点后保留显式空值并移除局域网访问参数', async () => {
+    mocks.fetchRouteList.mockResolvedValueOnce({
+      isSuccess: true,
+      data: { routes: [availableExitRoute()] },
+    })
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="exit-node-enable"]').setValue(true)
+    await flushPromises()
+    await wrapper.get('[data-testid="exit-node-select"]').setValue('exit-node-1')
+    await setBoolean(wrapper, 'exit-node-allow-lan-access', 'true')
+
+    expect(command(wrapper)).toContain('--exit-node=exit-node-1')
+    expect(command(wrapper)).toContain('--exit-node-allow-lan-access')
+
+    await wrapper.get('[data-testid="select-clear"]').trigger('click')
+    await nextTick()
+
+    expect(() => command(wrapper)).not.toThrow()
+    expect(command(wrapper)).toContain('--exit-node=')
+    expect(command(wrapper)).not.toContain('--exit-node-allow-lan-access')
+  })
+
+  it('出口节点列表返回失败后再次启用会重试', async () => {
+    mocks.fetchRouteList
+      .mockResolvedValueOnce({ isSuccess: false })
+      .mockResolvedValueOnce({ isSuccess: true, data: { routes: [] } })
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="exit-node-enable"]').setValue(true)
+    await flushPromises()
+    await wrapper.get('[data-testid="exit-node-enable"]').setValue(false)
+    await wrapper.get('[data-testid="exit-node-enable"]').setValue(true)
+    await flushPromises()
+
+    expect(mocks.fetchRouteList).toHaveBeenCalledTimes(2)
+  })
+
+  it('出口节点列表请求拒绝后再次启用会安全重试', async () => {
+    mocks.fetchRouteList
+      .mockRejectedValueOnce(new Error('网络异常'))
+      .mockResolvedValueOnce({ isSuccess: true, data: { routes: [] } })
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="exit-node-enable"]').setValue(true)
+    await flushPromises()
+    await wrapper.get('[data-testid="exit-node-enable"]').setValue(false)
+    await wrapper.get('[data-testid="exit-node-enable"]').setValue(true)
+    await flushPromises()
+
+    expect(mocks.fetchRouteList).toHaveBeenCalledTimes(2)
   })
 })
