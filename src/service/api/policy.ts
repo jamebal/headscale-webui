@@ -12,5 +12,5 @@ export function fetchPolicy() {
 }
 
 export function setPolicy(policy: string) {
-  return request.Put<Service.ResponseResult<any>>('/api/v1/policy', { policy })
+  return request.Put<Service.ResponseResult<Policy>>('/api/v1/policy', { policy })
 }

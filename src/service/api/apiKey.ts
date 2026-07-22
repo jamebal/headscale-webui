@@ -19,9 +19,9 @@ export function createApiKey(expiration: string) {
 }
 
 export function expireApiKey(prefix: string) {
-  return request.Post<Service.ResponseResult<{ apiKeys: string }>>(`/api/v1/apikey/expire`, { prefix })
+  return request.Post<Service.ResponseResult<Record<string, never>>>('/api/v1/apikey/expire', { prefix })
 }
 
 export function deleteApiKey(prefix: string) {
-  return request.Delete<Service.ResponseResult<{ apiKeys: string }>>(`/api/v1/apikey/${prefix}`)
+  return request.Delete<Service.ResponseResult<Record<string, never>>>(`/api/v1/apikey/${encodeURIComponent(prefix)}`)
 }

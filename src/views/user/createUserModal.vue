@@ -56,7 +56,7 @@ function handleSubmit() {
     if (errors)
       return
     isLoading.value = true
-    const result = await createUser(formModal.value.name)
+    const result = await createUser({ name: formModal.value.name })
     if (!result || !result.isSuccess) {
       isLoading.value = false
       return

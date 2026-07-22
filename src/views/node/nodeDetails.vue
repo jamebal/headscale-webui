@@ -30,23 +30,9 @@ const { t } = useI18n()
       <n-descriptions-item :label="t('app.registerMethod')">
         {{ nodeData.registerMethod }}
       </n-descriptions-item>
-      <n-descriptions-item :label="t('app.forcedTags')">
+      <n-descriptions-item :label="t('app.tags')">
         <n-space>
-          <n-tag v-for="tag in nodeData.forcedTags" :key="tag" size="small" type="info">
-            {{ tag }}
-          </n-tag>
-        </n-space>
-      </n-descriptions-item>
-      <n-descriptions-item :label="t('app.invalidTags')">
-        <n-space>
-          <n-tag v-for="tag in nodeData.invalidTags" :key="tag" size="small" type="info">
-            {{ tag }}
-          </n-tag>
-        </n-space>
-      </n-descriptions-item>
-      <n-descriptions-item :label="t('app.validTags')">
-        <n-space>
-          <n-tag v-for="tag in nodeData.validTags" :key="tag" size="small" type="info">
+          <n-tag v-for="tag in nodeData.tags" :key="tag" size="small" type="info">
             {{ tag }}
           </n-tag>
         </n-space>

@@ -38,7 +38,7 @@ watch(modalVisible, (newVal) => {
 
 watch(() => props.show, (newVal) => {
   modalVisible.value = newVal
-  tags.value = props.nodeData.forcedTags.map(tag => ({ label: tag, value: tag }))
+  tags.value = props.nodeData.tags.map(tag => ({ label: tag, value: tag }))
 })
 
 const handleCreate: (label: string) => { label: string, value: string } = label => handleTagCreate(label, tags, t)
@@ -51,7 +51,7 @@ async function handleSubmit() {
     isLoading.value = false
     return
   }
-  window.$message.success(`${t('app.changeOwner')} ${t('common.success')}`)
+  window.$message.success(`${t('app.setTags')} ${t('common.success')}`)
   appStore.sendMessage({ event: 'refreshNodeList', data: {} })
   isLoading.value = false
   closeModal()

@@ -4,9 +4,9 @@ import type { DataTableColumns } from 'naive-ui'
 import { NButton, NTag } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/store'
-import type { RouteData } from '@/service'
-import { disableRoute, enableRoute, fetchRouteList } from '@/service'
-import { showDeleteRouteDialog } from '@/views/route/deleteRouteDialog'
+import type { RouteData } from '@/service/api/route'
+import { buildApprovedRoutes, deriveRoutes } from '@/service/api/route'
+import { fetchNodeList, setApprovedRoutes } from '@/service/api/node'
 
 const props = defineProps(
   {
@@ -26,9 +26,14 @@ const props = defineProps(
   },
 )
 
+const emit = defineEmits<{
+  (event: 'routesUpdated', routes: RouteData[]): void
+}>()
+
 const { t } = useI18n()
 
 const routeList = ref<RouteData[]>([])
+const updatingRouteKey = ref('')
 
 const appStore = useAppStore()
 
@@ -38,98 +43,47 @@ watch(() => appStore.message, (newMessage) => {
   }
 })
 
-const dialog = useDialog()
-
-const enableBtnLoading = ref(false)
-
-function enableOrDisableRoute(id: string) {
-  const route = routeList.value.find(item => item.id === id)
-  if (!route) {
+async function toggleRoute(route: RouteData) {
+  const approved = !route.approved
+  const routes = buildApprovedRoutes(route.node, route.prefix, approved)
+  updatingRouteKey.value = route.key
+  const result = await setApprovedRoutes(route.node.id, routes)
+  updatingRouteKey.value = ''
+  if (!result?.isSuccess) {
     return
   }
-  enableBtnLoading.value = true
-  if (route.enabled) {
-    disableRoute(id).then((res) => {
-      enableBtnLoading.value = false
-      if (!res.isSuccess) {
-        return
+  const updatedRoutes = routeList.value.map(item => item.node.id === route.node.id
+    ? {
+        ...item,
+        node: { ...item.node, approvedRoutes: routes },
+        approved: routes.includes(item.prefix),
       }
-      window.$message.success(`${t('common.disable')} ${t('common.success')}`)
-      appStore.sendMessage({ event: 'refreshNodeList', data: {} })
-      renderRouteList()
-    })
-  }
-  else {
-    enableRoute(id).then((res) => {
-      enableBtnLoading.value = false
-      if (!res.isSuccess) {
-        return
-      }
-      window.$message.success(`${t('common.enable')} ${t('common.success')}`)
-      appStore.sendMessage({ event: 'refreshNodeList', data: {} })
-      renderRouteList()
-    })
-  }
+    : item)
+  routeList.value = updatedRoutes
+  emit('routesUpdated', updatedRoutes)
+  window.$message.success(`${t(`common.${approved ? 'enable' : 'disable'}`)} ${t('common.success')}`)
+  appStore.sendMessage({ event: 'refreshNodeList', data: {} })
 }
 
 const columns = computed((): DataTableColumns<RouteData> => {
   const baseColumns: DataTableColumns<RouteData> = [
     {
-      title: 'id',
-      key: 'id',
-      align: 'center',
-    },
-    {
       title: t('app.node'),
       key: 'node.givenName',
-      disabled: () => true,
     },
     {
       title: t('app.prefix'),
       key: 'prefix',
     },
     {
-      title: t('app.advertised'),
-      key: 'advertised',
-      render(rowData) {
-        return h(NTag, {
-          style: {
-            marginRight: '6px',
-          },
-          type: rowData.advertised ? 'info' : 'default',
-          bordered: true,
-        }, {
-          default: () => t(`common.${rowData.advertised ? 'yes' : 'no'}`),
-        })
-      },
-    },
-    {
       title: t('app.enabled'),
-      key: 'enabled',
+      key: 'approved',
       render(rowData) {
         return h(NTag, {
-          style: {
-            marginRight: '6px',
-          },
-          type: rowData.enabled ? 'info' : 'default',
+          type: rowData.approved ? 'info' : 'default',
           bordered: true,
         }, {
-          default: () => t(`common.${rowData.enabled ? 'enable' : 'disable'}`),
-        })
-      },
-    },
-    {
-      title: t('app.isPrimary'),
-      key: 'isPrimary',
-      render(rowData) {
-        return h(NTag, {
-          style: {
-            marginRight: '6px',
-          },
-          type: rowData.isPrimary ? 'info' : 'default',
-          bordered: true,
-        }, {
-          default: () => t(`common.${rowData.isPrimary ? 'yes' : 'no'}`),
+          default: () => t(`common.${rowData.approved ? 'enable' : 'disable'}`),
         })
       },
     },
@@ -137,60 +91,43 @@ const columns = computed((): DataTableColumns<RouteData> => {
       title: t('app.action'),
       key: 'actions',
       align: 'center',
-      width: '180px',
+      width: '120px',
       render(rowData) {
-        return h(
-          'div',
-          { style: { display: 'flex', justifyContent: 'space-evenly' } },
-          [
-            h(NButton, {
-              secondary: true,
-              size: 'small',
-              loading: enableBtnLoading.value,
-              type: rowData.enabled ? 'warning' : 'info',
-              onClick() {
-                enableOrDisableRoute(rowData.id)
-              },
-            }, {
-              default: () => t(`common.${rowData.enabled ? 'disable' : 'enable'}`),
-            }),
-            h(NButton, {
-              secondary: true,
-              size: 'small',
-              type: 'error',
-              onClick() {
-                showDeleteRouteDialog(dialog, t, rowData.id, rowData.prefix)
-              },
-            }, {
-              default: () => t('common.delete'),
-            }),
-          ],
-        )
+        return h(NButton, {
+          secondary: true,
+          size: 'small',
+          loading: updatingRouteKey.value === rowData.key,
+          type: rowData.approved ? 'warning' : 'info',
+          onClick() {
+            toggleRoute(rowData)
+          },
+        }, {
+          default: () => t(`common.${rowData.approved ? 'disable' : 'enable'}`),
+        })
       },
     },
   ]
   if (props.hideNodeName) {
-    baseColumns.splice(1, 1)
-    if (props.exitNode) {
-      baseColumns.splice(0, 3)
-      baseColumns.splice(1, 1)
-    }
+    baseColumns.splice(0, 1)
   }
   return baseColumns
 })
 
-function renderRouteList() {
-  if (props.routes && props.routes.length > 0) {
+async function renderRouteList() {
+  if (props.routes) {
     routeList.value = props.routes
     return
   }
-  fetchRouteList().then((res) => {
-    if (!res.isSuccess) {
-      return
-    }
-    routeList.value = res.data.routes
-  })
+  const result = await fetchNodeList('')
+  if (!result?.isSuccess) {
+    return
+  }
+  routeList.value = deriveRoutes(result.data.nodes)
 }
+
+watch(() => props.routes, () => {
+  renderRouteList()
+}, { deep: true })
 
 onMounted(() => {
   renderRouteList()
@@ -203,6 +140,7 @@ onMounted(() => {
       striped
       :columns="columns"
       :data="routeList"
+      :row-key="(row: RouteData) => row.key"
     />
   </n-space>
 </template>

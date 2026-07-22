@@ -55,6 +55,7 @@
     "registerNodeSuccesses": "注册成功",
     "createdTime": "创建时间",
     "registerMethod": "注册方式",
+    "tags": "标签",
     "forcedTags": "强制标签",
     "invalidTags": "无效标签",
     "validTags": "有效标签",
@@ -92,6 +93,30 @@
     "updateTime": "更新时间",
     "hideInvalid": "隐藏无效",
 
+    "deployScenario": {
+      "deploy": "常规部署",
+      "recover": "恢复个人节点"
+    },
+    "deployOptions": {
+      "unspecified": "未指定",
+      "valueRequired": "启用该参数后必须填写参数值",
+      "netfilterMode": "Netfilter 模式（仅 Linux）：on、nodivert 或 off",
+      "reportPosture": "允许管理面收集设备 posture 信息（默认值为 false）",
+      "snatSubnetRoutes": "对本机广告的子网路由执行源地址转换（仅 Linux，默认值为 true）",
+      "statefulFiltering": "对转发流量应用有状态过滤（仅 Linux，默认值为 false）",
+      "json": "以 JSON 格式输出结果",
+      "qrFormat": "二维码格式：auto、ascii、large 或 small"
+    },
+    "deployRecovery": {
+      "disconnectTitle": "重新认证可能断开远程连接",
+      "disconnectWarning": "不要在唯一的 Tailscale SSH 或 RDP 管理链路中直接执行此命令。",
+      "clearTags": "使用 --force-reauth 重新认证。",
+      "completeFlags": "如果客户端提示必须重新声明现有设置，请执行错误信息中回显的完整命令以保留这些设置；也可以在确认风险后启用“重置其他未声明设置”再重试。",
+      "loginAsPersonalUser": "浏览器打开后，请登录节点应归属的个人用户。",
+      "resetOtherSettings": "重置其他未声明设置",
+      "resetWarning": "--reset 会把未声明设置恢复默认值，可能影响 DNS、路由、SSH、出口节点和防火墙行为。"
+    },
+
     "shieldsUp": "不允许传入连接（默认值为 false）",
     "qr": "显示用于登录 URL 的二维码（默认值为 false）",
     "rest": "将未指定的设置重置为默认值（默认值为 false）",
@@ -103,12 +128,13 @@
     "timeout": "等待 Tailscaled 进入运行状态的最大时间；默认值（0s）表示无限期阻塞（默认值为 0s）",
 
     "acceptDns": "接受来自管理面板的 DNS 配置（默认值为 true）",
-    "acceptRisk": "接受风险并跳过风险类型的确认：lose-ssh,all",
+    "acceptRisk": "接受风险并跳过风险类型的确认：lose-ssh、mac-app-connector、all",
     "acceptRiskOptions": {
       "lose-ssh": "lose-ssh",
+      "mac-app-connector": "mac-app-connector",
       "all": "all"
     },
-    "acceptRoutes": "接受其他 Tailscale 节点广告的路由（默认值为 true）",
+    "acceptRoutes": "接受其他 Tailscale 节点广告的路由（默认值取决于操作系统）",
     "exitNode": "用于互联网流量的 Tailscale 退出节点（IP 或基本名称），或者为空字符串表示不使用出口节点",
 
     "advertiseConnector": "将此节点广告为应用程序连接器（默认值为 false）",
@@ -147,6 +173,7 @@
     "appRoot": "首页",
     "nodes": "节点管理",
     "apiKeys": "API Keys",
+    "preAuthKeys": "预授权密钥",
     "routes": "路由管理",
     "users": "用户管理",
     "policy": "策略",
@@ -155,7 +182,8 @@
   "components": {
     "copyText": {
       "tooltip": "复制",
-      "message": "复制成功"
+      "message": "复制成功",
+      "failed": "复制失败"
     }
   }
 }
