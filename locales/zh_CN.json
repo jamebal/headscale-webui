@@ -110,10 +110,9 @@
     "deployRecovery": {
       "disconnectTitle": "重新认证可能断开远程连接",
       "disconnectWarning": "不要在唯一的 Tailscale SSH 或 RDP 管理链路中直接执行此命令。",
-      "clearTags": "命令通过 --advertise-tags= 清除标签申请，并使用 --force-reauth 重新认证。",
+      "clearTags": "使用 --force-reauth 重新认证。",
       "completeFlags": "如果客户端提示必须重新声明现有设置，请执行错误信息中回显的完整命令以保留这些设置；也可以在确认风险后启用“重置其他未声明设置”再重试。",
       "loginAsPersonalUser": "浏览器打开后，请登录节点应归属的个人用户。",
-      "verifyOwner": "完成后请确认节点所有者不再是 tagged-devices，并且标签为空。",
       "resetOtherSettings": "重置其他未声明设置",
       "resetWarning": "--reset 会把未声明设置恢复默认值，可能影响 DNS、路由、SSH、出口节点和防火墙行为。"
     },

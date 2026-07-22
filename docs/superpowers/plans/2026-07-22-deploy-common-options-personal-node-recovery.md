@@ -55,7 +55,7 @@ describe('tailscale up 命令生成', () => {
       { name: '--advertise-routes', value: '' },
       { name: '--exit-node', value: '' },
     ])).toBe(
-      'tailscale up --login-server=https://headscale.example.com --advertise-tags= --advertise-routes= --exit-node=',
+      'tailscale up --login-server=https://headscale.example.com --advertise-routes= --exit-node=',
     )
   })
 
@@ -69,13 +69,13 @@ describe('tailscale up 命令生成', () => {
 
   it('生成默认个人节点恢复命令且不重置其他设置', () => {
     expect(buildPersonalNodeRecoveryCommand('https://headscale.example.com')).toBe(
-      'tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth',
+      'tailscale up --login-server=https://headscale.example.com --force-reauth',
     )
   })
 
   it('仅在用户明确选择时给恢复命令添加 reset', () => {
     expect(buildPersonalNodeRecoveryCommand('https://headscale.example.com', true)).toBe(
-      'tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth --reset',
+      'tailscale up --login-server=https://headscale.example.com --force-reauth --reset',
     )
   })
 })
@@ -627,7 +627,7 @@ it('恢复场景生成清空标签和强制认证命令', async () => {
   await wrapper.get('[data-testid="scenario-recover"]').trigger('click')
 
   expect(wrapper.get('[data-testid="command"]').text()).toBe(
-    'tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth',
+    'tailscale up --login-server=https://headscale.example.com --force-reauth',
   )
   expect(wrapper.text()).toContain('app.deployRecovery.disconnectWarning')
   expect(wrapper.text()).toContain('app.deployRecovery.loginAsPersonalUser')
@@ -821,7 +821,7 @@ Expected: FAIL，`acceptRiskOptions` 缺少 `mac-app-connector`，或条件 QR �
 "deployRecovery": {
   "disconnectTitle": "重新认证可能断开远程连接",
   "disconnectWarning": "不要在唯一的 Tailscale SSH 或 RDP 管理链路中直接执行此命令。",
-  "clearTags": "命令通过 --advertise-tags= 清除标签申请，并使用 --force-reauth 重新认证。",
+  "clearTags": "使用 --force-reauth 重新认证。",
   "loginAsPersonalUser": "浏览器打开后，请登录节点应归属的个人用户。",
   "verifyOwner": "完成后请确认节点所有者不再是 tagged-devices，并且标签为空。",
   "resetOtherSettings": "重置其他未声明设置",

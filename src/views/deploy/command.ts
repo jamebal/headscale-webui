@@ -44,7 +44,6 @@ export function buildPersonalNodeRecoveryCommand(
   reset = false,
 ): string {
   const options: TailscaleUpOption[] = [
-    { name: '--advertise-tags', value: '' },
     { name: '--force-reauth', value: true },
   ]
 

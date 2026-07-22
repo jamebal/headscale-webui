@@ -20,11 +20,10 @@ describe('部署命令生成器', () => {
     expect(buildTailscaleUpCommand(
       'https://headscale.example.com',
       [
-        { name: '--advertise-tags', value: '' },
         { name: '--advertise-routes', value: '' },
         { name: '--exit-node', value: '' },
       ],
-    )).toBe('tailscale up --login-server=https://headscale.example.com --advertise-tags= --advertise-routes= --exit-node=')
+    )).toBe('tailscale up --login-server=https://headscale.example.com --advertise-routes= --exit-node=')
   })
 
   it('安全转义含空格和单引号的 shell 参数', () => {
@@ -47,11 +46,11 @@ describe('部署命令生成器', () => {
 
   it('生成默认不含 reset 的个人节点恢复命令', () => {
     expect(buildPersonalNodeRecoveryCommand('https://headscale.example.com'))
-      .toBe('tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth')
+      .toBe('tailscale up --login-server=https://headscale.example.com --force-reauth')
   })
 
   it('按需在个人节点恢复命令末尾追加 reset', () => {
     expect(buildPersonalNodeRecoveryCommand('https://headscale.example.com', true))
-      .toBe('tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth --reset')
+      .toBe('tailscale up --login-server=https://headscale.example.com --force-reauth --reset')
   })
 })

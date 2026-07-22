@@ -269,7 +269,7 @@ describe('常规部署参数', () => {
 
     await wrapper.get('[data-testid="scenario-recover"]').trigger('click')
 
-    expect(command(wrapper)).toBe('tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth')
+    expect(command(wrapper)).toBe('tailscale up --login-server=https://headscale.example.com --force-reauth')
     expect(wrapper.text()).toContain('app.deployRecovery.disconnectWarning')
     expect(wrapper.text()).toContain('app.deployRecovery.completeFlags')
     expect(wrapper.text()).toContain('app.deployRecovery.loginAsPersonalUser')
