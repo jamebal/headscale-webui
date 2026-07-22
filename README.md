@@ -5,12 +5,12 @@ Supported Headscale series: Headscale v0.29.x.
 
 Choose an image tag based on your upgrade policy:
 
-- `0.0.7-hs0.29` is an immutable tag that pins a fixed WebUI and Headscale compatibility combination.
-- `0.0.7` is the immutable project tag for this WebUI release.
+- `0.0.8-hs0.29` is an immutable tag that pins a fixed WebUI and Headscale compatibility combination.
+- `0.0.8` is the immutable project tag for this WebUI release.
 - `hs0.29` is a movable alias that tracks the latest WebUI release compatible with Headscale v0.29.x.
 - `latest` tracks the latest WebUI release. `latest` does not guarantee compatibility with older Headscale versions.
 
-For reproducible deployments, pin `0.0.7-hs0.29`. Use `hs0.29` when you want compatible fixes for the same Headscale series. Before upgrading Headscale, verify that the selected image tag supports the target series.
+For reproducible deployments, pin `0.0.8-hs0.29`. Use `hs0.29` when you want compatible fixes for the same Headscale series. Before upgrading Headscale, verify that the selected image tag supports the target series.
 
 ### Some screenshots:
 ![node.png](doc/node.png)

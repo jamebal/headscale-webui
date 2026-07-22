@@ -6,12 +6,12 @@
 
 请根据升级策略选择镜像标签：
 
-- `0.0.7-hs0.29` 是不可移动的组合标签，固定 WebUI 版本与 Headscale 兼容系列。
-- `0.0.7` 是该 WebUI Release 的不可移动项目版本标签。
+- `0.0.8-hs0.29` 是不可移动的组合标签，固定 WebUI 版本与 Headscale 兼容系列。
+- `0.0.8` 是该 WebUI Release 的不可移动项目版本标签。
 - `hs0.29` 是可移动别名，跟随仍兼容 Headscale `v0.29.x` 的最新 WebUI 版本。
 - `latest` 指向最新 WebUI 版本；`latest` 不保证兼容旧版 Headscale。
 
-如需可复现部署，请固定使用 `0.0.7-hs0.29`；如需获取同一 Headscale 系列的兼容修复，请使用 `hs0.29`。升级 Headscale 前，请先确认所选镜像标签支持目标系列。
+如需可复现部署，请固定使用 `0.0.8-hs0.29`；如需获取同一 Headscale 系列的兼容修复，请使用 `hs0.29`。升级 Headscale 前，请先确认所选镜像标签支持目标系列。
 
 ### 部份截图:
 ![node.png](doc/node.png)
