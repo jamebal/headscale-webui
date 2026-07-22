@@ -11,12 +11,16 @@ enableAutoUnmount(afterEach)
 const mocks = vi.hoisted(() => ({
   copy: vi.fn(),
   fetchRouteList: vi.fn(),
+  isClipboardSupported: { value: true },
   messageError: vi.fn(),
   messageSuccess: vi.fn(),
 }))
 
 vi.mock('@vueuse/core', () => ({
-  useClipboard: () => ({ copy: mocks.copy }),
+  useClipboard: () => ({
+    copy: mocks.copy,
+    isSupported: mocks.isClipboardSupported,
+  }),
 }))
 
 vi.mock('@/service', () => ({
@@ -237,6 +241,7 @@ describe('常规部署参数', () => {
   beforeEach(() => {
     mocks.copy.mockReset()
     mocks.copy.mockResolvedValue(undefined)
+    mocks.isClipboardSupported.value = true
     mocks.messageError.mockReset()
     mocks.messageSuccess.mockReset()
     Object.defineProperty(window, '$message', {
@@ -327,6 +332,18 @@ describe('常规部署参数', () => {
     await wrapper.get('[data-testid="command-card"]').trigger('click')
     await flushPromises()
 
+    expect(mocks.messageError).toHaveBeenCalledWith('components.copyText.failed')
+    expect(mocks.messageSuccess).not.toHaveBeenCalled()
+  })
+
+  it('剪贴板 API 不受支持时不尝试复制并仅显示失败提示', async () => {
+    mocks.isClipboardSupported.value = false
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="command-card"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.copy).not.toHaveBeenCalled()
     expect(mocks.messageError).toHaveBeenCalledWith('components.copyText.failed')
     expect(mocks.messageSuccess).not.toHaveBeenCalled()
   })

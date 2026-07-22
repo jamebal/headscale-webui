@@ -18,7 +18,7 @@ interface TagOption {
   value: string
 }
 
-const { copy } = useClipboard()
+const { copy, isSupported } = useClipboard()
 const { t } = useI18n()
 
 const serverUrl = ref(local.get('serverUrl') ?? '')
@@ -161,6 +161,11 @@ function isRequiredValueMissing(enabled: boolean, value: string) {
 }
 
 async function copyCode() {
+  if (!isSupported.value) {
+    window.$message.error(t('components.copyText.failed'))
+    return
+  }
+
   try {
     await copy(code.value)
     window.$message.success(t('components.copyText.message'))

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 type BooleanOptionState = 'unset' | 'true' | 'false'
@@ -16,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const rootRef = ref<HTMLElement | null>(null)
 
 const selectValue = computed<BooleanOptionState>(() => {
   if (props.modelValue === null)
@@ -43,10 +44,22 @@ function handleUpdate(value: unknown) {
       break
   }
 }
+
+function syncSelectAriaLabel() {
+  void nextTick(() => {
+    const trigger = rootRef.value?.querySelector<HTMLElement>(
+      '.n-base-selection-label[tabindex="0"], .n-base-selection-tags[tabindex="0"]',
+    )
+    trigger?.setAttribute('aria-label', props.label)
+  })
+}
+
+onMounted(syncSelectAriaLabel)
+watch(() => props.label, syncSelectAriaLabel)
 </script>
 
 <template>
-  <div class="boolean-option">
+  <div ref="rootRef" class="boolean-option">
     <div class="boolean-option-label">
       <span>{{ label }}</span>
       <help-info v-if="help" :message="help" />

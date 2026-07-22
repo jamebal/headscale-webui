@@ -1,5 +1,5 @@
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import BooleanOption from '@/views/deploy/BooleanOption.vue'
 
@@ -98,6 +98,46 @@ describe('部署参数三态控件', () => {
     const wrapper = mountBooleanOption(null)
 
     expect(wrapper.get('[data-testid="boolean-select"]').attributes('aria-label')).toBe('测试选项')
+  })
+
+  it('将标签设置到真实下拉框的可聚焦触发元素', async () => {
+    const wrapper = mount(BooleanOption, {
+      props: {
+        label: '真实选项',
+        modelValue: null,
+      },
+      global: {
+        stubs: {
+          HelpInfo: HelpInfoStub,
+        },
+      },
+    })
+
+    await nextTick()
+
+    const trigger = wrapper.get('.n-base-selection-label[tabindex="0"]')
+    expect(trigger.attributes('aria-label')).toBe('真实选项')
+  })
+
+  it('标签变化时同步更新真实下拉框的可访问名称', async () => {
+    const wrapper = mount(BooleanOption, {
+      props: {
+        label: '原始标签',
+        modelValue: null,
+      },
+      global: {
+        stubs: {
+          HelpInfo: HelpInfoStub,
+        },
+      },
+    })
+    await nextTick()
+
+    await wrapper.setProps({ label: '更新标签' })
+    await nextTick()
+
+    const trigger = wrapper.get('.n-base-selection-label[tabindex="0"]')
+    expect(trigger.attributes('aria-label')).toBe('更新标签')
   })
 
   it('显示标签并仅在提供帮助文本时显示帮助信息', () => {
