@@ -265,6 +265,7 @@ describe('常规部署参数', () => {
 
     expect(command(wrapper)).toBe('tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth')
     expect(wrapper.text()).toContain('app.deployRecovery.disconnectWarning')
+    expect(wrapper.text()).toContain('app.deployRecovery.completeFlags')
     expect(wrapper.text()).toContain('app.deployRecovery.loginAsPersonalUser')
   })
 
@@ -400,8 +401,14 @@ describe('常规部署参数', () => {
 
     expect(zhCN.app.acceptRisk).toContain('mac-app-connector')
     expect(enUS.app.acceptRisk).toContain('mac-app-connector')
-    expect(zhCN.app.acceptRoutes).toContain('默认值为 false')
-    expect(enUS.app.acceptRoutes).toContain('default false')
+    expect(zhCN.app.acceptRoutes).toContain('默认值取决于操作系统')
+    expect(enUS.app.acceptRoutes).toContain('default depends on the operating system')
+    expect(zhCN.app.deployOptions.netfilterMode).toContain('仅 Linux')
+    expect(enUS.app.deployOptions.netfilterMode).toContain('Linux only')
+    expect(zhCN.app.deployOptions.snatSubnetRoutes).toContain('仅 Linux')
+    expect(enUS.app.deployOptions.snatSubnetRoutes).toContain('Linux only')
+    expect(zhCN.app.deployOptions.statefulFiltering).toContain('仅 Linux')
+    expect(enUS.app.deployOptions.statefulFiltering).toContain('Linux only')
     expect(zhCN.components.copyText.failed).toBe('复制失败')
     expect(enUS.components.copyText.failed).toBe('Copy failed')
   })

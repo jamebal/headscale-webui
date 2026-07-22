@@ -492,6 +492,7 @@ function downloadStatic() {
           {{ t('app.deployRecovery.disconnectWarning') }}
         </n-alert>
         <p>{{ t('app.deployRecovery.clearTags') }}</p>
+        <p>{{ t('app.deployRecovery.completeFlags') }}</p>
         <p>{{ t('app.deployRecovery.loginAsPersonalUser') }}</p>
         <p>{{ t('app.deployRecovery.verifyOwner') }}</p>
         <n-checkbox v-model:checked="recoveryReset" data-testid="recovery-reset">
