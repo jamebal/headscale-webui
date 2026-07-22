@@ -15,12 +15,13 @@ vi.mock('vue-i18n', async (importOriginal) => {
 
 const NSelectStub = defineComponent({
   name: 'NSelect',
+  inheritAttrs: false,
   props: {
     value: { type: String, required: true },
     options: { type: Array, required: true },
   },
   emits: ['update:value'],
-  template: '<button data-testid="boolean-select" />',
+  template: '<button v-bind="$attrs" data-testid="boolean-select" />',
 })
 
 const HelpInfoStub = defineComponent({
@@ -83,6 +84,20 @@ describe('部署参数三态控件', () => {
     wrapper.getComponent(NSelectStub).vm.$emit('update:value', state)
 
     expect(wrapper.emitted('update:modelValue')).toEqual([[expectedValue]])
+  })
+
+  it('忽略下拉框发出的非法状态', () => {
+    const wrapper = mountBooleanOption(null)
+
+    wrapper.getComponent(NSelectStub).vm.$emit('update:value', 'unknown')
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('使用标签作为下拉框的可访问名称', () => {
+    const wrapper = mountBooleanOption(null)
+
+    expect(wrapper.get('[data-testid="boolean-select"]').attributes('aria-label')).toBe('测试选项')
   })
 
   it('显示标签并仅在提供帮助文本时显示帮助信息', () => {

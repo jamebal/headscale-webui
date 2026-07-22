@@ -1,6 +1,8 @@
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import enUS from '../locales/en_US.json'
+import zhCN from '../locales/zh_CN.json'
 import DeployView from '@/views/deploy/index.vue'
 import { local } from '@/utils/storage'
 
@@ -9,6 +11,8 @@ enableAutoUnmount(afterEach)
 const mocks = vi.hoisted(() => ({
   copy: vi.fn(),
   fetchRouteList: vi.fn(),
+  messageError: vi.fn(),
+  messageSuccess: vi.fn(),
 }))
 
 vi.mock('@vueuse/core', () => ({
@@ -119,7 +123,10 @@ const NDynamicTagsStub = defineComponent({
 
 const NRadioGroupStub = defineComponent({
   name: 'NRadioGroup',
-  template: '<div><slot /></div>',
+  props: {
+    name: { type: String, default: undefined },
+  },
+  template: '<div data-testid="radio-group" :data-name="name"><slot /></div>',
 })
 
 const NRadioButtonStub = defineComponent({
@@ -134,6 +141,14 @@ const NAlertStub = defineComponent({
     title: { type: String, default: '' },
   },
   template: '<div><div>{{ title }}</div><slot /></div>',
+})
+
+const HelpInfoStub = defineComponent({
+  name: 'HelpInfo',
+  props: {
+    message: { type: String, required: true },
+  },
+  template: '<span>{{ message }}</span>',
 })
 
 function mountDeployView() {
@@ -169,7 +184,7 @@ function mountDeployView() {
         Alert: NAlertStub,
         NAlert: NAlertStub,
         AuthKeyCascader: NInputStub,
-        HelpInfo: true,
+        HelpInfo: HelpInfoStub,
         NovaIcon: true,
       },
     },
@@ -220,6 +235,17 @@ async function setBoolean(wrapper: ReturnType<typeof mountDeployView>, testId: s
 
 describe('常规部署参数', () => {
   beforeEach(() => {
+    mocks.copy.mockReset()
+    mocks.copy.mockResolvedValue(undefined)
+    mocks.messageError.mockReset()
+    mocks.messageSuccess.mockReset()
+    Object.defineProperty(window, '$message', {
+      configurable: true,
+      value: {
+        error: mocks.messageError,
+        success: mocks.messageSuccess,
+      },
+    })
     local.set('serverUrl', 'https://headscale.example.com')
     mocks.fetchRouteList.mockResolvedValue({
       isSuccess: true,
@@ -247,6 +273,62 @@ describe('常规部署参数', () => {
 
     expect(command(wrapper)).toContain('--reset')
     expect(wrapper.text()).toContain('app.deployRecovery.resetWarning')
+  })
+
+  it('恢复重置开关在场景往返后保持启用并继续显示警告', async () => {
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="scenario-recover"]').trigger('click')
+    await wrapper.get('[data-testid="recovery-reset"]').setValue(true)
+    await wrapper.get('[data-testid="scenario-deploy"]').trigger('click')
+    await wrapper.get('[data-testid="scenario-recover"]').trigger('click')
+
+    expect(wrapper.get('[data-testid="recovery-reset"]').element).toHaveProperty('checked', true)
+    expect(wrapper.text()).toContain('app.deployRecovery.resetWarning')
+  })
+
+  it('部署场景单选组使用稳定的表单名称', () => {
+    const wrapper = mountDeployView()
+
+    expect(wrapper.get('[data-testid="radio-group"]').attributes('data-name')).toBe('deploy-scenario')
+  })
+
+  it('启用 Accept Risk 后提供全部受支持的风险值', async () => {
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="accept-risk-enable"]').setValue(true)
+    const select = wrapper.findAllComponents(NSelectStub).find((candidate) => {
+      const options = candidate.props('options') as Array<{ value: string }>
+      return options.some(option => option.value === 'lose-ssh')
+    })
+
+    expect(select).toBeDefined()
+    expect((select!.props('options') as Array<{ value: string }>).map(option => option.value)).toEqual([
+      'lose-ssh',
+      'mac-app-connector',
+      'all',
+    ])
+  })
+
+  it('复制命令成功后仅显示成功提示', async () => {
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="command-card"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.messageSuccess).toHaveBeenCalledWith('components.copyText.message')
+    expect(mocks.messageError).not.toHaveBeenCalled()
+  })
+
+  it('复制命令失败后仅显示失败提示', async () => {
+    mocks.copy.mockRejectedValueOnce(new Error('剪贴板不可用'))
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="command-card"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.messageError).toHaveBeenCalledWith('components.copyText.failed')
+    expect(mocks.messageSuccess).not.toHaveBeenCalled()
   })
 
   it('恢复场景的重置状态不会污染常规部署命令', async () => {
@@ -278,6 +360,33 @@ describe('常规部署参数', () => {
     expect(wrapper.text()).toContain('SNAT Subnet Routes')
     expect(wrapper.text()).toContain('Stateful Filtering')
     expect(wrapper.text()).toContain('JSON Output')
+  })
+
+  it('为新增部署参数接入对应的国际化帮助文案', async () => {
+    const wrapper = mountDeployView()
+
+    expect(wrapper.text()).toContain('app.deployOptions.netfilterMode')
+    expect(wrapper.text()).toContain('app.deployOptions.reportPosture')
+    expect(wrapper.text()).toContain('app.deployOptions.snatSubnetRoutes')
+    expect(wrapper.text()).toContain('app.deployOptions.statefulFiltering')
+    expect(wrapper.text()).toContain('app.deployOptions.json')
+
+    await setBoolean(wrapper, 'qr', 'true')
+    expect(wrapper.text()).toContain('app.deployOptions.qrFormat')
+  })
+
+  it('中英文部署文案结构完全对齐并包含修正后的提示', () => {
+    expect(Object.keys(zhCN.app.deployScenario)).toEqual(Object.keys(enUS.app.deployScenario))
+    expect(Object.keys(zhCN.app.deployOptions)).toEqual(Object.keys(enUS.app.deployOptions))
+    expect(Object.keys(zhCN.app.deployRecovery)).toEqual(Object.keys(enUS.app.deployRecovery))
+    expect(Object.keys(zhCN.app.acceptRiskOptions)).toEqual(Object.keys(enUS.app.acceptRiskOptions))
+
+    expect(zhCN.app.acceptRisk).toContain('mac-app-connector')
+    expect(enUS.app.acceptRisk).toContain('mac-app-connector')
+    expect(zhCN.app.acceptRoutes).toContain('默认值为 false')
+    expect(enUS.app.acceptRoutes).toContain('default false')
+    expect(zhCN.components.copyText.failed).toBe('复制失败')
+    expect(enUS.components.copyText.failed).toBe('Copy failed')
   })
 
   it.each([

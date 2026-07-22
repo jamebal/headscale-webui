@@ -64,6 +64,7 @@ const advertiseRoutes = ref<TagOption[]>([])
 
 const acceptRiskOptions = [
   { label: t('app.acceptRiskOptions.lose-ssh'), value: 'lose-ssh' },
+  { label: t('app.acceptRiskOptions.mac-app-connector'), value: 'mac-app-connector' },
   { label: t('app.acceptRiskOptions.all'), value: 'all' },
 ]
 
@@ -159,9 +160,14 @@ function isRequiredValueMissing(enabled: boolean, value: string) {
   return enabled && value.trim() === ''
 }
 
-function copyCode() {
-  copy(code.value)
-  window.$message.success(t('components.copyText.message'))
+async function copyCode() {
+  try {
+    await copy(code.value)
+    window.$message.success(t('components.copyText.message'))
+  }
+  catch {
+    window.$message.error(t('components.copyText.failed'))
+  }
 }
 
 async function renderExitNodeOptions() {
@@ -254,7 +260,7 @@ function downloadStatic() {
       </n-flex>
     </n-flex>
 
-    <n-radio-group v-model:value="scenario">
+    <n-radio-group v-model:value="scenario" name="deploy-scenario">
       <n-radio-button
         value="deploy"
         data-testid="scenario-deploy"
@@ -293,6 +299,7 @@ function downloadStatic() {
               data-testid="qr-format-select"
               :options="qrFormatOptions"
             />
+            <help-info v-if="qr === true" :message="t('app.deployOptions.qrFormat')" />
           </n-gi>
           <n-gi class="pl-20 md-440">
             <BooleanOption v-model="reset" data-testid="reset" label="Reset" :help="`--reset, --reset=false \r\n   ${t('app.rest')}`" />
@@ -444,9 +451,12 @@ function downloadStatic() {
         <n-grid :y-gap="15" :cols="3">
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="netfilterModeEnabled" data-testid="netfilter-mode-enable">
-                Netfilter Mode
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="netfilterModeEnabled" data-testid="netfilter-mode-enable">
+                  Netfilter Mode
+                </n-checkbox>
+                <help-info :message="t('app.deployOptions.netfilterMode')" />
+              </n-flex>
               <n-select
                 v-if="netfilterModeEnabled"
                 v-model:value="netfilterMode"
@@ -456,16 +466,16 @@ function downloadStatic() {
             </n-flex>
           </n-gi>
           <n-gi class="pl-20 md-440">
-            <BooleanOption v-model="reportPosture" data-testid="report-posture" label="Report Posture" />
+            <BooleanOption v-model="reportPosture" data-testid="report-posture" label="Report Posture" :help="t('app.deployOptions.reportPosture')" />
           </n-gi>
           <n-gi class="pl-20 md-440">
-            <BooleanOption v-model="snatSubnetRoutes" data-testid="snat-subnet-routes" label="SNAT Subnet Routes" />
+            <BooleanOption v-model="snatSubnetRoutes" data-testid="snat-subnet-routes" label="SNAT Subnet Routes" :help="t('app.deployOptions.snatSubnetRoutes')" />
           </n-gi>
           <n-gi class="pl-20 md-440">
-            <BooleanOption v-model="statefulFiltering" data-testid="stateful-filtering" label="Stateful Filtering" />
+            <BooleanOption v-model="statefulFiltering" data-testid="stateful-filtering" label="Stateful Filtering" :help="t('app.deployOptions.statefulFiltering')" />
           </n-gi>
           <n-gi class="pl-20 md-440">
-            <BooleanOption v-model="json" data-testid="json" label="JSON Output" />
+            <BooleanOption v-model="json" data-testid="json" label="JSON Output" :help="t('app.deployOptions.json')" />
           </n-gi>
         </n-grid>
       </n-space>

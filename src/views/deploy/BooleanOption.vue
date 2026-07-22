@@ -30,14 +30,18 @@ const stateOptions = computed(() => [
   { label: t('common.disable'), value: 'false' },
 ] satisfies Array<{ label: string, value: BooleanOptionState }>)
 
-function handleUpdate(value: BooleanOptionState) {
-  const modelValues: Record<BooleanOptionState, boolean | null> = {
-    unset: null,
-    true: true,
-    false: false,
+function handleUpdate(value: unknown) {
+  switch (value) {
+    case 'unset':
+      emit('update:modelValue', null)
+      break
+    case 'true':
+      emit('update:modelValue', true)
+      break
+    case 'false':
+      emit('update:modelValue', false)
+      break
   }
-
-  emit('update:modelValue', modelValues[value])
 }
 </script>
 
@@ -50,6 +54,7 @@ function handleUpdate(value: BooleanOptionState) {
     <n-select
       :value="selectValue"
       :options="stateOptions"
+      :aria-label="label"
       @update:value="handleUpdate"
     />
   </div>
