@@ -1,174 +1,236 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useClipboard } from '@vueuse/core'
-import { local } from '@/utils'
+import { computed, ref, watch } from 'vue'
+import type { TailscaleUpOption } from '@/views/deploy/command'
 import { deriveRoutes, fetchNodeList } from '@/service'
+import { local } from '@/utils'
 import { handleTagCreate } from '@/utils/tags'
+import BooleanOption from '@/views/deploy/BooleanOption.vue'
+import { buildPersonalNodeRecoveryCommand, buildTailscaleUpCommand } from '@/views/deploy/command'
 
-const { copy } = useClipboard()
+type NetfilterMode = 'on' | 'nodivert' | 'off'
+type QrFormat = 'auto' | 'ascii' | 'large' | 'small'
+type Scenario = 'deploy' | 'recover'
 
+interface TagOption {
+  label: string
+  value: string
+}
+
+const { copy, isSupported } = useClipboard()
 const { t } = useI18n()
 
-const code = ref('tailscale up')
+const serverUrl = ref(local.get('serverUrl') ?? '')
+const scenario = ref<Scenario>('deploy')
+const recoveryReset = ref(false)
 
-const options = ref<string[]>([
-  '--reset',
-  '--accept-dns',
-  '--accept-routes',
-])
+const reset = ref<boolean | null>(true)
+const shieldsUp = ref<boolean | null>(null)
+const qr = ref<boolean | null>(null)
+const forceReauth = ref<boolean | null>(null)
+const ssh = ref<boolean | null>(null)
+const acceptDns = ref<boolean | null>(true)
+const acceptRoutes = ref<boolean | null>(true)
+const exitNodeAllowLanAccess = ref<boolean | null>(null)
+const advertiseConnector = ref<boolean | null>(null)
+const advertiseExitNode = ref<boolean | null>(null)
+const reportPosture = ref<boolean | null>(null)
+const snatSubnetRoutes = ref<boolean | null>(null)
+const statefulFiltering = ref<boolean | null>(null)
+const json = ref<boolean | null>(null)
+
+const operatorEnabled = ref(false)
+const authKeyEnabled = ref(false)
+const hostnameEnabled = ref(false)
+const timeoutEnabled = ref(false)
+const acceptRiskEnabled = ref(false)
+const exitNodeEnabled = ref(false)
+const advertiseTagsEnabled = ref(false)
+const advertiseRoutesEnabled = ref(false)
+const netfilterModeEnabled = ref(false)
 
 const operator = ref('')
+const authKey = ref('')
 const hostname = ref('')
 const timeout = ref('')
-const authKey = ref('')
 const acceptRisk = ref('')
-const exitNode = ref('')
+const exitNode = ref<string | null>('')
+const netfilterMode = ref<NetfilterMode>('on')
+const qrFormat = ref<QrFormat>('auto')
 
-const advertiseTags = ref<{ label: string, value: string }[]>([])
-const advertiseRoutes = ref<{ label: string, value: string }[]>([])
-
-const advertiseTagsValues = ref('')
-const advertiseRoutesValues = ref('')
+const advertiseTags = ref<TagOption[]>([])
+const advertiseRoutes = ref<TagOption[]>([])
 
 const acceptRiskOptions = [
   { label: t('app.acceptRiskOptions.lose-ssh'), value: 'lose-ssh' },
+  { label: t('app.acceptRiskOptions.mac-app-connector'), value: 'mac-app-connector' },
   { label: t('app.acceptRiskOptions.all'), value: 'all' },
 ]
 
-const exitNodeOptions = ref([
-  { label: 'Node 1', value: 'node1' },
-])
+const netfilterModeOptions: Array<{ label: NetfilterMode, value: NetfilterMode }> = [
+  { label: 'on', value: 'on' },
+  { label: 'nodivert', value: 'nodivert' },
+  { label: 'off', value: 'off' },
+]
 
-code.value += ` --login-server=${local.get('serverUrl')}`
+const qrFormatOptions: Array<{ label: QrFormat, value: QrFormat }> = [
+  { label: 'auto', value: 'auto' },
+  { label: 'ascii', value: 'ascii' },
+  { label: 'large', value: 'large' },
+  { label: 'small', value: 'small' },
+]
 
-function copyCode() {
-  copy(code.value)
-  window.$message.success(t('components.copyText.message'))
+const exitNodeOptions = ref<Array<{ label: string, value: string }>>([])
+const exitNodeOptionsLoaded = ref(false)
+const exitNodeOptionsLoading = ref(false)
+
+function pushBooleanOption(
+  target: TailscaleUpOption[],
+  name: TailscaleUpOption['name'],
+  value: boolean | null,
+) {
+  if (value !== null)
+    target.push({ name, value })
 }
 
-function renderCodeText() {
-  const optionMap: Record<string, string | undefined> = {
-    '--operator': operator.value,
-    '--auth-key': authKey.value,
-    '--hostname': hostname.value,
-    '--timeout': timeout.value,
-    '--accept-risk': acceptRisk.value,
-    '--exit-node': exitNode.value,
-    '--advertise-tags': advertiseTagsValues.value,
-    '--advertise-routes': advertiseRoutesValues.value,
+function pushRequiredStringOption(
+  target: TailscaleUpOption[],
+  name: TailscaleUpOption['name'],
+  enabled: boolean,
+  value: string,
+) {
+  if (enabled && value.trim() !== '')
+    target.push({ name, value })
+}
+
+const deployOptions = computed<TailscaleUpOption[]>(() => {
+  const result: TailscaleUpOption[] = []
+
+  pushBooleanOption(result, '--shields-up', shieldsUp.value)
+  pushBooleanOption(result, '--qr', qr.value)
+  if (qr.value === true)
+    result.push({ name: '--qr-format', value: qrFormat.value })
+  pushBooleanOption(result, '--reset', reset.value)
+  pushRequiredStringOption(result, '--operator', operatorEnabled.value, operator.value)
+  pushBooleanOption(result, '--force-reauth', forceReauth.value)
+  pushBooleanOption(result, '--ssh', ssh.value)
+  pushRequiredStringOption(result, '--auth-key', authKeyEnabled.value, authKey.value)
+  pushRequiredStringOption(result, '--hostname', hostnameEnabled.value, hostname.value)
+  pushRequiredStringOption(result, '--timeout', timeoutEnabled.value, timeout.value)
+
+  pushBooleanOption(result, '--accept-dns', acceptDns.value)
+  pushBooleanOption(result, '--accept-routes', acceptRoutes.value)
+  pushRequiredStringOption(result, '--accept-risk', acceptRiskEnabled.value, acceptRisk.value)
+  if (exitNodeEnabled.value) {
+    result.push({ name: '--exit-node', value: exitNode.value ?? '' })
+    if (exitNode.value)
+      pushBooleanOption(result, '--exit-node-allow-lan-access', exitNodeAllowLanAccess.value)
   }
 
-  const baseCommand = 'tailscale up'
-  const serverUrl = local.get('serverUrl')
-  // 构建基础命令
-  code.value = `${baseCommand} --login-server=${serverUrl}`
-
-  // 遍历选项
-  options.value.forEach((option) => {
-    if (option in optionMap) {
-      if (optionMap[option]) {
-        code.value += ` ${option}=${optionMap[option]}`
-      }
-      return
-    }
-    code.value += ` ${option}`
-  })
-}
-
-function renderExitNodeOptions() {
-  exitNodeOptions.value = []
-  fetchNodeList('').then((res) => {
-    if (!res.isSuccess) {
-      return
-    }
-    deriveRoutes(res.data.nodes).forEach((route) => {
-      if (route.approved && route.exitRoute) {
-        exitNodeOptions.value.push({
-          label: route.node.givenName,
-          value: route.node.givenName,
-        })
-      }
+  pushBooleanOption(result, '--advertise-connector', advertiseConnector.value)
+  pushBooleanOption(result, '--advertise-exit-node', advertiseExitNode.value)
+  if (advertiseTagsEnabled.value) {
+    result.push({
+      name: '--advertise-tags',
+      value: advertiseTags.value.map(tag => tag.value).join(','),
     })
-  })
-}
-
-function changeOption(value: Array<string | number>) {
-  options.value = value.filter((option): option is string => typeof option === 'string')
-  if (options.value.includes('--exit-node')) {
-    renderExitNodeOptions()
   }
-  if (!options.value.includes('--exit-node')) {
-    // 去掉--exit-node-allow-lan-access
-    options.value = options.value.filter(option => option !== '--exit-node-allow-lan-access')
+  if (advertiseRoutesEnabled.value) {
+    result.push({
+      name: '--advertise-routes',
+      value: advertiseRoutes.value.map(route => route.value).join(','),
+    })
   }
-  renderCodeText()
+
+  pushRequiredStringOption(result, '--netfilter-mode', netfilterModeEnabled.value, netfilterMode.value)
+  pushBooleanOption(result, '--report-posture', reportPosture.value)
+  pushBooleanOption(result, '--snat-subnet-routes', snatSubnetRoutes.value)
+  pushBooleanOption(result, '--stateful-filtering', statefulFiltering.value)
+  pushBooleanOption(result, '--json', json.value)
+
+  return result
+})
+
+const code = computed(() => scenario.value === 'recover'
+  ? buildPersonalNodeRecoveryCommand(serverUrl.value, recoveryReset.value)
+  : buildTailscaleUpCommand(serverUrl.value, deployOptions.value))
+
+function isRequiredValueMissing(enabled: boolean, value: string) {
+  return enabled && value.trim() === ''
 }
 
-function onOperatorUpdate(value: string) {
-  operator.value = value
-  renderCodeText()
+async function copyCode() {
+  if (!isSupported.value) {
+    window.$message.error(t('components.copyText.failed'))
+    return
+  }
+
+  try {
+    await copy(code.value)
+    window.$message.success(t('components.copyText.message'))
+  }
+  catch {
+    window.$message.error(t('components.copyText.failed'))
+  }
 }
 
-function onHostnameUpdate(value: string) {
-  hostname.value = value
-  renderCodeText()
+async function renderExitNodeOptions() {
+  if (exitNodeOptionsLoaded.value || exitNodeOptionsLoading.value)
+    return
+
+  exitNodeOptionsLoading.value = true
+  try {
+    const res = await fetchNodeList('')
+    if (!res.isSuccess)
+      return
+
+    exitNodeOptions.value = deriveRoutes(res.data.nodes)
+      .filter(route => route.approved && route.exitRoute)
+      .map(route => ({
+        label: route.node.givenName,
+        value: route.node.givenName,
+      }))
+    exitNodeOptionsLoaded.value = true
+  }
+  catch {
+    return
+  }
+  finally {
+    exitNodeOptionsLoading.value = false
+  }
 }
 
-function onTimeoutUpdate(value: string) {
-  timeout.value = value
-  renderCodeText()
-}
+watch(qr, (value) => {
+  if (value !== true)
+    qrFormat.value = 'auto'
+})
 
-function onAuthKeyUpdate(value: string) {
-  authKey.value = value
-  renderCodeText()
-}
+watch([exitNodeEnabled, exitNode], ([enabled, node]) => {
+  if (!enabled || !node)
+    exitNodeAllowLanAccess.value = null
+  if (enabled)
+    void renderExitNodeOptions()
+})
 
-function onAcceptRiskUpdate(value: string) {
-  acceptRisk.value = value
-  renderCodeText()
-}
-
-function onexitNodeUpdate(value: string) {
-  exitNode.value = value
-  renderCodeText()
-}
-
-const handleAdvertiseTagCreate: (label: string) => { label: string, value: string } = label => handleTagCreate(label, advertiseTags, t)
+const handleAdvertiseTagCreate: (label: string) => TagOption = label => handleTagCreate(label, advertiseTags, t)
 
 function isValidCIDR(cidr: string): boolean {
   const cidrRegex = /^(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\.(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\.(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\.(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\/(?:\d|[12]\d|3[0-2])$/
   return cidrRegex.test(cidr)
 }
 
-const handleAdvertiseRoutesCreate: (label: string) => { label: string, value: string } = (label) => {
-  // 判断是否已经存在
-  if (advertiseRoutes.value.find(tag => tag.label === label)) {
-    // 显示成功消息并抛出异常
+const handleAdvertiseRoutesCreate: (label: string) => TagOption = (label) => {
+  if (advertiseRoutes.value.find(route => route.label === label)) {
     window.$message.success(`${label} ${t('common.exists')}`)
     throw new Error(`Tag with label "${label}" already exists.`)
   }
 
-  // 判断是否是有效的CIDR
   if (!isValidCIDR(label)) {
-    // 显示错误消息并抛出异常
     window.$message.error(`${label} ${t('app.InvalidCIDR')}`)
     throw new Error(`Tag with label "${label}" is invalid.`)
   }
 
   return { label, value: label }
-}
-
-function onAdvertiseTagsUpdate(value: { label: string, value: string }[]) {
-  advertiseTags.value = value
-  advertiseTagsValues.value = value.map(tag => tag.value).join(',')
-  renderCodeText()
-}
-
-function onAdvertiseRoutesUpdate(value: { label: string, value: string }[]) {
-  advertiseRoutes.value = value
-  advertiseRoutesValues.value = value.map(tag => tag.label).join(',')
-  renderCodeText()
 }
 
 function downloadTailscale() {
@@ -178,10 +240,6 @@ function downloadTailscale() {
 function downloadStatic() {
   window.open('https://pkgs.tailscale.com/stable/#static', '_blank')
 }
-
-onMounted(() => {
-  renderCodeText()
-})
 </script>
 
 <template>
@@ -206,249 +264,247 @@ onMounted(() => {
       </n-flex>
     </n-flex>
 
-    <n-card size="small" hoverable embedded style="cursor: pointer" @click="copyCode">
+    <n-radio-group v-model:value="scenario" name="deploy-scenario">
+      <n-radio-button
+        value="deploy"
+        data-testid="scenario-deploy"
+        @click="scenario = 'deploy'"
+      >
+        {{ t('app.deployScenario.deploy') }}
+      </n-radio-button>
+      <n-radio-button
+        value="recover"
+        data-testid="scenario-recover"
+        @click="scenario = 'recover'"
+      >
+        {{ t('app.deployScenario.recover') }}
+      </n-radio-button>
+    </n-radio-group>
+
+    <n-card data-testid="command-card" size="small" hoverable embedded style="cursor: pointer" @click="copyCode">
       <n-code :code="code" language="shell" class="code" word-wrap />
     </n-card>
 
-    <n-card>
-      <n-checkbox-group v-model:value="options" @update:value="changeOption">
-        <n-space vertical>
-          <div class="title">
-            General:
-          </div>
+    <n-card v-if="scenario === 'deploy'">
+      <n-space vertical>
+        <div class="title">
+          General:
+        </div>
 
-          <n-grid :y-gap="15" :cols="3">
-            <n-gi class="pl-20 md-440">
-              <n-checkbox value="--shields-up">
-                <div class="option-command">
-                  Shields Up
-                  <div class="help-footnote">
-                    <help-info :message="`--shields-up, --shields-up=false \r\n   ${t('app.shieldsUp')}`" />
-                  </div>
-                </div>
+        <n-grid :y-gap="15" :cols="3">
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="shieldsUp" data-testid="shields-up" label="Shields Up" :help="`--shields-up, --shields-up=false \r\n   ${t('app.shieldsUp')}`" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="qr" data-testid="qr" label="Generate QR Code" :help="`--qr, --qr=false \r\n   ${t('app.qr')}`" />
+            <n-select
+              v-if="qr === true"
+              v-model:value="qrFormat"
+              data-testid="qr-format-select"
+              :options="qrFormatOptions"
+            />
+            <help-info v-if="qr === true" :message="t('app.deployOptions.qrFormat')" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="reset" data-testid="reset" label="Reset" :help="`--reset, --reset=false \r\n   ${t('app.rest')}`" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-checkbox v-model:checked="operatorEnabled" data-testid="operator-enable">
+                Operator
               </n-checkbox>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-checkbox value="--qr">
-                <div class="option-command">
-                  Generate QR Code
-                  <div class="help-footnote">
-                    <help-info :message="`--qr, --qr=false \r\n   ${t('app.qr')}`" />
-                  </div>
+              <template v-if="operatorEnabled">
+                <n-input v-model:value="operator" :status="isRequiredValueMissing(operatorEnabled, operator) ? 'error' : undefined" />
+                <div v-if="isRequiredValueMissing(operatorEnabled, operator)" class="validation-error">
+                  {{ t('app.deployOptions.valueRequired') }}
                 </div>
+              </template>
+            </n-flex>
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="forceReauth" data-testid="force-reauth" label="Force Reauthentication" :help="`--force-reauth, --force-reauth=false \r\n   ${t('app.forceReauth')}`" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="ssh" data-testid="ssh" label="SSH Server" :help="`--ssh, --ssh=false \r\n   ${t('app.ssh')}`" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-checkbox v-model:checked="authKeyEnabled" data-testid="auth-key-enable">
+                PreAuth Key
               </n-checkbox>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-checkbox value="--reset">
-                <div class="option-command">
-                  Rest
-                  <div class="help-footnote">
-                    <help-info :message="`--reset, --reset=false \r\n   ${t('app.rest')}`" />
-                  </div>
-                </div>
-              </n-checkbox>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex vertical>
-                <n-checkbox value="--operator">
-                  <div class="option-command">
-                    Operator
-                    <div class="help-footnote">
-                      <help-info :message="`--operator string \r\n   ${t('app.operator')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-                <n-input v-if="options.includes('--operator')" v-model:value="operator" @update-value="onOperatorUpdate" />
-              </n-flex>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-checkbox value="--force-reauth">
-                <div class="option-command">
-                  Force Reauthentication
-                  <div class="help-footnote">
-                    <help-info :message="`--force-reauth, --force-reauth=false \r\n   ${t('app.forceReauth')}`" />
-                  </div>
-                </div>
-              </n-checkbox>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-checkbox value="--ssh">
-                <div class="option-command">
-                  SSH Server
-                  <div class="help-footnote">
-                    <help-info :message="`--ssh string \r\n   ${t('app.ssh')}`" />
-                  </div>
-                </div>
-              </n-checkbox>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex>
-                <n-checkbox value="--auth-key">
-                  <div class="option-command">
-                    PreAuth Key
-                    <div class="help-footnote">
-                      <help-info :message="`--auth-key string \r\n   ${t('app.authKey')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
+              <template v-if="authKeyEnabled">
                 <n-input
-                  v-if="options.includes('--auth-key')"
                   v-model:value="authKey"
                   type="password"
                   show-password-on="click"
-                  @update-value="onAuthKeyUpdate"
                 />
-              </n-flex>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex vertical>
-                <n-checkbox value="--hostname">
-                  <div class="option-command">
-                    Hostname
-                    <div class="help-footnote">
-                      <help-info :message="`--hostname string \r\n   ${t('app.hostname')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-                <n-input v-if="options.includes('--hostname')" v-model:value="hostname" @update-value="onHostnameUpdate" />
-              </n-flex>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex vertical>
-                <n-checkbox value="--timeout">
-                  <div class="option-command">
-                    Timeout
-                    <div class="help-footnote">
-                      <help-info :message="`--timeout string \r\n   ${t('app.timeout')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-                <n-input v-if="options.includes('--timeout')" v-model:value="timeout" @update-value="onTimeoutUpdate" />
-              </n-flex>
-            </n-gi>
-          </n-grid>
-        </n-space>
-
-        <n-space vertical>
-          <div class="title">
-            Accept:
-          </div>
-
-          <n-grid :y-gap="15" :cols="3">
-            <n-gi class="pl-20 md-440">
-              <n-checkbox value="--accept-dns">
-                <div class="option-command">
-                  Accept DNS
-                  <div class="help-footnote">
-                    <help-info :message="`--accept-dns, --accept-dns=false \r\n   ${t('app.acceptDns')}`" />
-                  </div>
+                <div v-if="isRequiredValueMissing(authKeyEnabled, authKey)" class="validation-error">
+                  {{ t('app.deployOptions.valueRequired') }}
                 </div>
+              </template>
+            </n-flex>
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-checkbox v-model:checked="hostnameEnabled" data-testid="hostname-enable">
+                Hostname
               </n-checkbox>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-checkbox value="--accept-routes">
-                <div class="option-command">
-                  Accept Routes
-                  <div class="help-footnote">
-                    <help-info :message="`--accept-routes, --accept-routes=false \r\n   ${t('app.acceptRoutes')}`" />
-                  </div>
+              <template v-if="hostnameEnabled">
+                <n-input
+                  v-model:value="hostname"
+                  data-testid="hostname-input"
+                  :status="isRequiredValueMissing(hostnameEnabled, hostname) ? 'error' : undefined"
+                />
+                <div v-if="isRequiredValueMissing(hostnameEnabled, hostname)" data-testid="hostname-error" class="validation-error">
+                  {{ t('app.deployOptions.valueRequired') }}
                 </div>
+              </template>
+            </n-flex>
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-checkbox v-model:checked="timeoutEnabled" data-testid="timeout-enable">
+                Timeout
               </n-checkbox>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex vertical>
-                <n-checkbox value="--accept-risk">
-                  <div class="option-command">
-                    Accept Risk
-                    <div class="help-footnote">
-                      <help-info :message="`--accept-risk string \r\n   ${t('app.acceptRisk')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-                <n-select v-if="options.includes('--accept-risk')" v-model:value="acceptRisk" :options="acceptRiskOptions" @update-value="onAcceptRiskUpdate" />
-              </n-flex>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex vertical>
-                <n-checkbox value="--exit-node">
-                  <div class="option-command">
-                    Exit Node
-                    <div class="help-footnote">
-                      <help-info :message="`--exit-node string \r\n   ${t('app.exitNode')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-                <n-select v-if="options.includes('--exit-node')" v-model:value="exitNode" :options="exitNodeOptions" @update-value="onexitNodeUpdate" />
-                <n-checkbox v-if="options.includes('--exit-node') && exitNode" value="--exit-node-allow-lan-access" class="pl-20">
-                  <div class="option-command">
-                    Allow LAN Access
-                    <div class="help-footnote">
-                      <help-info :message="`--exit-node-allow-lan-access, --exit-node-allow-lan-access=false \r\n   ${t('app.exitNodeAllowLanAccess')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-              </n-flex>
-            </n-gi>
-          </n-grid>
-        </n-space>
-
-        <n-space vertical>
-          <div class="title">
-            Advertise:
-          </div>
-
-          <n-grid :y-gap="15" :cols="3">
-            <n-gi class="pl-20 md-440">
-              <n-checkbox value="--advertise-connector">
-                <div class="option-command">
-                  Advertise Connector
-                  <div class="help-footnote">
-                    <help-info :message="`--advertise-connector, --advertise-connector=false \r\n   ${t('app.advertiseConnector')}`" />
-                  </div>
+              <template v-if="timeoutEnabled">
+                <n-input v-model:value="timeout" :status="isRequiredValueMissing(timeoutEnabled, timeout) ? 'error' : undefined" />
+                <div v-if="isRequiredValueMissing(timeoutEnabled, timeout)" class="validation-error">
+                  {{ t('app.deployOptions.valueRequired') }}
                 </div>
+              </template>
+            </n-flex>
+          </n-gi>
+        </n-grid>
+      </n-space>
+
+      <n-space vertical>
+        <div class="title">
+          Accept:
+        </div>
+
+        <n-grid :y-gap="15" :cols="3">
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="acceptDns" data-testid="accept-dns" label="Accept DNS" :help="`--accept-dns, --accept-dns=false \r\n   ${t('app.acceptDns')}`" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="acceptRoutes" data-testid="accept-routes" label="Accept Routes" :help="`--accept-routes, --accept-routes=false \r\n   ${t('app.acceptRoutes')}`" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-checkbox v-model:checked="acceptRiskEnabled" data-testid="accept-risk-enable">
+                Accept Risk
               </n-checkbox>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex vertical>
-                <n-checkbox value="--advertise-exit-node">
-                  <div class="option-command">
-                    Advertise Exit Node
-                    <div class="help-footnote">
-                      <help-info :message="`--advertise-exit-node, --advertise-exit-node=false \r\n   ${t('app.advertiseExitNode')}`" />
-                    </div>
-                  </div>
+              <template v-if="acceptRiskEnabled">
+                <n-select v-model:value="acceptRisk" :options="acceptRiskOptions" :status="isRequiredValueMissing(acceptRiskEnabled, acceptRisk) ? 'error' : undefined" />
+                <div v-if="isRequiredValueMissing(acceptRiskEnabled, acceptRisk)" class="validation-error">
+                  {{ t('app.deployOptions.valueRequired') }}
+                </div>
+              </template>
+            </n-flex>
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-checkbox v-model:checked="exitNodeEnabled" data-testid="exit-node-enable">
+                Exit Node
+              </n-checkbox>
+              <n-select v-if="exitNodeEnabled" v-model:value="exitNode" data-testid="exit-node-select" :options="exitNodeOptions" clearable filterable tag />
+              <BooleanOption
+                v-if="exitNodeEnabled && exitNode"
+                v-model="exitNodeAllowLanAccess"
+                data-testid="exit-node-allow-lan-access"
+                label="Allow LAN Access"
+                :help="`--exit-node-allow-lan-access, --exit-node-allow-lan-access=false \r\n   ${t('app.exitNodeAllowLanAccess')}`"
+              />
+            </n-flex>
+          </n-gi>
+        </n-grid>
+      </n-space>
+
+      <n-space vertical>
+        <div class="title">
+          Advertise:
+        </div>
+
+        <n-grid :y-gap="15" :cols="3">
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="advertiseConnector" data-testid="advertise-connector" label="Advertise Connector" :help="`--advertise-connector, --advertise-connector=false \r\n   ${t('app.advertiseConnector')}`" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="advertiseExitNode" data-testid="advertise-exit-node" label="Advertise Exit Node" :help="`--advertise-exit-node, --advertise-exit-node=false \r\n   ${t('app.advertiseExitNode')}`" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-checkbox v-model:checked="advertiseTagsEnabled" data-testid="advertise-tags-enable">
+                Advertise Tags
+              </n-checkbox>
+              <n-dynamic-tags v-if="advertiseTagsEnabled" v-model:value="advertiseTags" type="info" @create="handleAdvertiseTagCreate" />
+            </n-flex>
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-checkbox v-model:checked="advertiseRoutesEnabled" data-testid="advertise-routes-enable">
+                Advertise Routes
+              </n-checkbox>
+              <n-dynamic-tags v-if="advertiseRoutesEnabled" v-model:value="advertiseRoutes" type="info" input-style="width: 150px;" @create="handleAdvertiseRoutesCreate" />
+            </n-flex>
+          </n-gi>
+        </n-grid>
+      </n-space>
+
+      <n-space vertical>
+        <div class="title">
+          More:
+        </div>
+
+        <n-grid :y-gap="15" :cols="3">
+          <n-gi class="pl-20 md-440">
+            <n-flex vertical>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="netfilterModeEnabled" data-testid="netfilter-mode-enable">
+                  Netfilter Mode
                 </n-checkbox>
+                <help-info :message="t('app.deployOptions.netfilterMode')" />
               </n-flex>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex vertical>
-                <n-checkbox value="--advertise-tags">
-                  <div class="option-command">
-                    Advertise Tags
-                    <div class="help-footnote">
-                      <help-info :message="`--advertise-tags string \r\n   ${t('app.advertiseTags')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-                <n-dynamic-tags v-if="options.includes('--advertise-tags')" v-model:value="advertiseTags" type="info" @create="handleAdvertiseTagCreate" @update-value="onAdvertiseTagsUpdate" />
-              </n-flex>
-            </n-gi>
-            <n-gi class="pl-20 md-440">
-              <n-flex vertical>
-                <n-checkbox value="--advertise-routes">
-                  <div class="option-command">
-                    Advertise Routes
-                    <div class="help-footnote">
-                      <help-info :message="`--advertise-routes string \r\n   ${t('app.advertiseRoutes')}`" />
-                    </div>
-                  </div>
-                </n-checkbox>
-                <n-dynamic-tags v-if="options.includes('--advertise-routes')" v-model:value="advertiseRoutes" type="info" input-style="width: 150px;" @create="handleAdvertiseRoutesCreate" @update-value="onAdvertiseRoutesUpdate" />
-              </n-flex>
-            </n-gi>
-          </n-grid>
-        </n-space>
-      </n-checkbox-group>
+              <n-select
+                v-if="netfilterModeEnabled"
+                v-model:value="netfilterMode"
+                data-testid="netfilter-mode-select"
+                :options="netfilterModeOptions"
+              />
+            </n-flex>
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="reportPosture" data-testid="report-posture" label="Report Posture" :help="t('app.deployOptions.reportPosture')" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="snatSubnetRoutes" data-testid="snat-subnet-routes" label="SNAT Subnet Routes" :help="t('app.deployOptions.snatSubnetRoutes')" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="statefulFiltering" data-testid="stateful-filtering" label="Stateful Filtering" :help="t('app.deployOptions.statefulFiltering')" />
+          </n-gi>
+          <n-gi class="pl-20 md-440">
+            <BooleanOption v-model="json" data-testid="json" label="JSON Output" :help="t('app.deployOptions.json')" />
+          </n-gi>
+        </n-grid>
+      </n-space>
+    </n-card>
+
+    <n-card v-else>
+      <n-space vertical>
+        <n-alert type="warning" :title="t('app.deployRecovery.disconnectTitle')">
+          {{ t('app.deployRecovery.disconnectWarning') }}
+        </n-alert>
+        <p>{{ t('app.deployRecovery.clearTags') }}</p>
+        <p>{{ t('app.deployRecovery.completeFlags') }}</p>
+        <p>{{ t('app.deployRecovery.loginAsPersonalUser') }}</p>
+        <p>{{ t('app.deployRecovery.verifyOwner') }}</p>
+        <n-checkbox v-model:checked="recoveryReset" data-testid="recovery-reset">
+          {{ t('app.deployRecovery.resetOtherSettings') }}
+        </n-checkbox>
+        <n-alert v-if="recoveryReset" type="error">
+          {{ t('app.deployRecovery.resetWarning') }}
+        </n-alert>
+      </n-space>
     </n-card>
   </n-space>
 </template>
@@ -470,16 +526,8 @@ onMounted(() => {
 .md-440 {
   max-width: 440px;
 }
-.option-command {
-  display: flex;
-  flex-flow: wrap;
-  justify-content: flex-start;
-  gap: 8px 12px;
-  font-size: 16px;
-}
-.help-footnote {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.validation-error {
+  color: var(--error-color, #d03050);
+  font-size: 12px;
 }
 </style>

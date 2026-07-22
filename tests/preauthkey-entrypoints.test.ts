@@ -109,8 +109,8 @@ describe('preAuthKey 管理入口', () => {
         },
       },
     })
-    const vm = wrapper.vm as unknown as { options: string[] }
-    vm.options = [...vm.options, '--auth-key']
+    const vm = wrapper.vm as unknown as { authKeyEnabled: boolean }
+    vm.authKeyEnabled = true
     await nextTick()
 
     expect(wrapper.findComponent({ name: 'AuthKeyCascader' }).exists()).toBe(false)

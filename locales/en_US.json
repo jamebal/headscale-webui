@@ -93,6 +93,31 @@
     "updateTime": "Update Time",
     "hideInvalid": "Hide Invalid",
 
+    "deployScenario": {
+      "deploy": "Standard deployment",
+      "recover": "Restore personal node"
+    },
+    "deployOptions": {
+      "unspecified": "Unspecified",
+      "valueRequired": "A value is required when this option is enabled",
+      "netfilterMode": "Netfilter mode (Linux only): on, nodivert, or off",
+      "reportPosture": "Allow the control plane to collect device posture information (default false)",
+      "snatSubnetRoutes": "Source NAT subnet routes advertised by this device (Linux only; default true)",
+      "statefulFiltering": "Apply stateful filtering to forwarded traffic (Linux only; default false)",
+      "json": "Output results as JSON",
+      "qrFormat": "QR format: auto, ascii, large, or small"
+    },
+    "deployRecovery": {
+      "disconnectTitle": "Reauthentication may disconnect remote access",
+      "disconnectWarning": "Do not run this command directly over your only Tailscale SSH or RDP management connection.",
+      "clearTags": "The command clears tag requests with --advertise-tags= and reauthenticates with --force-reauth.",
+      "completeFlags": "If the client requires all existing settings to be specified, run the complete command shown in the error to preserve them, or retry with “Reset other unspecified settings” only after accepting the risk.",
+      "loginAsPersonalUser": "When the browser opens, sign in as the personal user who should own the node.",
+      "verifyOwner": "When complete, confirm that the node owner is no longer tagged-devices and that its tags are empty.",
+      "resetOtherSettings": "Reset other unspecified settings",
+      "resetWarning": "--reset restores unspecified settings to their defaults and may affect DNS, routing, SSH, exit nodes, and firewall behavior."
+    },
+
     "shieldsUp": "don't allow incoming connections (default false)",
     "qr": "show QR code for login URLs (default false)",
     "rest": "reset unspecified settings to their default values (default false)",
@@ -104,12 +129,13 @@
     "timeout": "maximum amount of time to wait for tailscaled to enter a Running state; default (0s) blocks forever (default 0s)",
 
     "acceptDns": "accept DNS configuration from the admin panel (default true)",
-    "acceptRisk": "accept risk and skip confirmation for risk types: lose-ssh,all",
+    "acceptRisk": "accept risk and skip confirmation for risk types: lose-ssh, mac-app-connector, all",
     "acceptRiskOptions": {
       "lose-ssh": "lose-ssh",
+      "mac-app-connector": "mac-app-connector",
       "all": "all"
     },
-    "acceptRoutes": "accept routes advertised by other Tailscale nodes (default true)",
+    "acceptRoutes": "accept routes advertised by other Tailscale nodes (default depends on the operating system)",
     "exitNode": "Tailscale exit node (IP or base name) for internet traffic, or empty string to not use an exit node",
 
     "advertiseConnector": "advertise this node as an app connector (default false)",
@@ -157,7 +183,8 @@
   "components": {
     "copyText": {
       "message": "Copied successfully",
-      "tooltip": "Copy"
+      "tooltip": "Copy",
+      "failed": "Copy failed"
     }
   }
 }
