@@ -26,6 +26,10 @@ const props = defineProps(
   },
 )
 
+const emit = defineEmits<{
+  (event: 'routesUpdated', routes: RouteData[]): void
+}>()
+
 const { t } = useI18n()
 
 const routeList = ref<RouteData[]>([])
@@ -48,8 +52,15 @@ async function toggleRoute(route: RouteData) {
   if (!result?.isSuccess) {
     return
   }
-  route.node.approvedRoutes = routes
-  route.approved = approved
+  const updatedRoutes = routeList.value.map(item => item.node.id === route.node.id
+    ? {
+        ...item,
+        node: { ...item.node, approvedRoutes: routes },
+        approved: routes.includes(item.prefix),
+      }
+    : item)
+  routeList.value = updatedRoutes
+  emit('routesUpdated', updatedRoutes)
   window.$message.success(`${t(`common.${approved ? 'enable' : 'disable'}`)} ${t('common.success')}`)
   appStore.sendMessage({ event: 'refreshNodeList', data: {} })
 }

@@ -11,9 +11,19 @@ const props = defineProps(
   },
 )
 
+const localRoutes = ref<RouteData[]>([...props.routes])
+
 const enabled = computed(() => {
-  return props.routes.find(route => route.approved)
+  return localRoutes.value.find(route => route.approved)
 })
+
+watch(() => props.routes, (routes) => {
+  localRoutes.value = [...routes]
+}, { deep: true })
+
+function handleRoutesUpdated(routes: RouteData[]) {
+  localRoutes.value = routes
+}
 
 const { t } = useI18n()
 </script>
@@ -25,7 +35,7 @@ const { t } = useI18n()
         {{ `${t('app.exit_node')}` }} <NovaIcon v-if="!enabled" icon="carbon:warning" class="text-size-sm" />
       </n-tag>
     </template>
-    <RouteTable :routes="routes" exit-node hide-node-name />
+    <RouteTable :routes="localRoutes" exit-node hide-node-name @routes-updated="handleRoutesUpdated" />
   </n-popover>
 </template>
 

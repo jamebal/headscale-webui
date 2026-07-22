@@ -11,8 +11,18 @@ const props = defineProps(
   },
 )
 
-const routeCount = props.routes?.length
-const enableCount = props.routes?.filter(route => route?.approved)?.length
+const localRoutes = ref<RouteData[]>([...props.routes])
+
+const routeCount = computed(() => localRoutes.value.length)
+const enableCount = computed(() => localRoutes.value.filter(route => route.approved).length)
+
+watch(() => props.routes, (routes) => {
+  localRoutes.value = [...routes]
+}, { deep: true })
+
+function handleRoutesUpdated(routes: RouteData[]) {
+  localRoutes.value = routes
+}
 
 const { t } = useI18n()
 </script>
@@ -24,7 +34,7 @@ const { t } = useI18n()
         {{ `${t('app.subnets')} ${enableCount}/${routeCount}` }}
       </n-tag>
     </template>
-    <RouteTable :routes="routes" hide-node-name />
+    <RouteTable :routes="localRoutes" hide-node-name @routes-updated="handleRoutesUpdated" />
   </n-popover>
 </template>
 
