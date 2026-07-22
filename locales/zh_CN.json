@@ -55,6 +55,7 @@
     "registerNodeSuccesses": "注册成功",
     "createdTime": "创建时间",
     "registerMethod": "注册方式",
+    "tags": "标签",
     "forcedTags": "强制标签",
     "invalidTags": "无效标签",
     "validTags": "有效标签",

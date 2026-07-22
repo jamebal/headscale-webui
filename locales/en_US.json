@@ -55,6 +55,7 @@
     "registerNodeSuccesses": "Register node successfully",
     "createdTime": "Created Time",
     "registerMethod": "Register Method",
+    "tags": "Tags",
     "forcedTags": "Forced Tags",
     "invalidTags": "Invalid Tags",
     "validTags": "Valid Tags",
