@@ -310,7 +310,7 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="operatorEnabled" data-testid="operator-enable">
                   Operator
                 </n-checkbox>
@@ -332,7 +332,7 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="authKeyEnabled" data-testid="auth-key-enable">
                   PreAuth Key
                 </n-checkbox>
@@ -352,7 +352,7 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="hostnameEnabled" data-testid="hostname-enable">
                   Hostname
                 </n-checkbox>
@@ -372,7 +372,7 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="timeoutEnabled" data-testid="timeout-enable">
                   Timeout
                 </n-checkbox>
@@ -403,7 +403,7 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="acceptRiskEnabled" data-testid="accept-risk-enable">
                   Accept Risk
                 </n-checkbox>
@@ -419,7 +419,7 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="exitNodeEnabled" data-testid="exit-node-enable">
                   Exit Node
                 </n-checkbox>
@@ -452,7 +452,7 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="advertiseTagsEnabled" data-testid="advertise-tags-enable">
                   Advertise Tags
                 </n-checkbox>
@@ -463,7 +463,7 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="advertiseRoutesEnabled" data-testid="advertise-routes-enable">
                   Advertise Routes
                 </n-checkbox>
@@ -483,7 +483,7 @@ function downloadStatic() {
         <n-grid :y-gap="15" :cols="3">
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-flex align="center">
+              <n-flex align="center" :size="0">
                 <n-checkbox v-model:checked="netfilterModeEnabled" data-testid="netfilter-mode-enable">
                   Netfilter Mode
                 </n-checkbox>

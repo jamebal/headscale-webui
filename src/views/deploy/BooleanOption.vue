@@ -61,7 +61,7 @@ watch(() => props.label, syncSelectAriaLabel)
 <template>
   <div ref="rootRef" class="boolean-option">
     <div class="boolean-option-label">
-      <span>{{ label }}</span>
+      <span p-2>{{ label }}</span>
       <help-info v-if="help" :message="help" />
     </div>
     <n-select
