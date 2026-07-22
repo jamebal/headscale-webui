@@ -34,6 +34,17 @@ describe('部署命令生成器', () => {
     )).toBe('tailscale up --login-server=\'https://headscale example.com\' --hostname=\'worker\'"\'"\'s host\'')
   })
 
+  it.each([
+    '--reset; malicious-command',
+    '--name\nmalicious-command',
+    '--$(malicious-command)',
+  ])('拒绝非法参数名：%s', (name) => {
+    expect(() => buildTailscaleUpCommand(
+      'https://headscale.example.com',
+      [{ name: name as `--${string}`, value: true }],
+    )).toThrow(TypeError)
+  })
+
   it('生成默认不含 reset 的个人节点恢复命令', () => {
     expect(buildPersonalNodeRecoveryCommand('https://headscale.example.com'))
       .toBe('tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth')

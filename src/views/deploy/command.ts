@@ -15,6 +15,10 @@ function quoteShellValue(value: string): string {
 }
 
 function serializeOption(option: TailscaleUpOption): string {
+  // eslint-disable-next-line regexp/use-ignore-case -- 保持参数名白名单与命令规范完全一致
+  if (!/^--[A-Za-z0-9][A-Za-z0-9-]*$/.test(option.name))
+    throw new TypeError('非法的 Tailscale 参数名')
+
   if (option.value === true)
     return option.name
 
