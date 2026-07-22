@@ -399,6 +399,22 @@ describe('常规部署参数', () => {
     expect(wrapper.text()).toContain('app.deployOptions.qrFormat')
   })
 
+  it('为需要填写值的常规部署参数显示问号说明', () => {
+    const wrapper = mountDeployView()
+    const helpMessages = wrapper.findAllComponents(HelpInfoStub).map(component => component.props('message'))
+
+    expect(helpMessages).toEqual(expect.arrayContaining([
+      '--operator string \r\n   app.operator',
+      '--auth-key string \r\n   app.authKey',
+      '--hostname string \r\n   app.hostname',
+      '--timeout string \r\n   app.timeout',
+      '--accept-risk string \r\n   app.acceptRisk',
+      '--exit-node string \r\n   app.exitNode',
+      '--advertise-tags string \r\n   app.advertiseTags',
+      '--advertise-routes string \r\n   app.advertiseRoutes',
+    ]))
+  })
+
   it('中英文部署文案结构完全对齐并包含修正后的提示', () => {
     expect(Object.keys(zhCN.app.deployScenario)).toEqual(Object.keys(enUS.app.deployScenario))
     expect(Object.keys(zhCN.app.deployOptions)).toEqual(Object.keys(enUS.app.deployOptions))

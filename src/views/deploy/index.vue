@@ -310,9 +310,12 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="operatorEnabled" data-testid="operator-enable">
-                Operator
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="operatorEnabled" data-testid="operator-enable">
+                  Operator
+                </n-checkbox>
+                <help-info :message="`--operator string \r\n   ${t('app.operator')}`" />
+              </n-flex>
               <template v-if="operatorEnabled">
                 <n-input v-model:value="operator" :status="isRequiredValueMissing(operatorEnabled, operator) ? 'error' : undefined" />
                 <div v-if="isRequiredValueMissing(operatorEnabled, operator)" class="validation-error">
@@ -329,9 +332,12 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="authKeyEnabled" data-testid="auth-key-enable">
-                PreAuth Key
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="authKeyEnabled" data-testid="auth-key-enable">
+                  PreAuth Key
+                </n-checkbox>
+                <help-info :message="`--auth-key string \r\n   ${t('app.authKey')}`" />
+              </n-flex>
               <template v-if="authKeyEnabled">
                 <n-input
                   v-model:value="authKey"
@@ -346,9 +352,12 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="hostnameEnabled" data-testid="hostname-enable">
-                Hostname
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="hostnameEnabled" data-testid="hostname-enable">
+                  Hostname
+                </n-checkbox>
+                <help-info :message="`--hostname string \r\n   ${t('app.hostname')}`" />
+              </n-flex>
               <template v-if="hostnameEnabled">
                 <n-input
                   v-model:value="hostname"
@@ -363,9 +372,12 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="timeoutEnabled" data-testid="timeout-enable">
-                Timeout
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="timeoutEnabled" data-testid="timeout-enable">
+                  Timeout
+                </n-checkbox>
+                <help-info :message="`--timeout string \r\n   ${t('app.timeout')}`" />
+              </n-flex>
               <template v-if="timeoutEnabled">
                 <n-input v-model:value="timeout" :status="isRequiredValueMissing(timeoutEnabled, timeout) ? 'error' : undefined" />
                 <div v-if="isRequiredValueMissing(timeoutEnabled, timeout)" class="validation-error">
@@ -391,9 +403,12 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="acceptRiskEnabled" data-testid="accept-risk-enable">
-                Accept Risk
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="acceptRiskEnabled" data-testid="accept-risk-enable">
+                  Accept Risk
+                </n-checkbox>
+                <help-info :message="`--accept-risk string \r\n   ${t('app.acceptRisk')}`" />
+              </n-flex>
               <template v-if="acceptRiskEnabled">
                 <n-select v-model:value="acceptRisk" :options="acceptRiskOptions" :status="isRequiredValueMissing(acceptRiskEnabled, acceptRisk) ? 'error' : undefined" />
                 <div v-if="isRequiredValueMissing(acceptRiskEnabled, acceptRisk)" class="validation-error">
@@ -404,9 +419,12 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="exitNodeEnabled" data-testid="exit-node-enable">
-                Exit Node
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="exitNodeEnabled" data-testid="exit-node-enable">
+                  Exit Node
+                </n-checkbox>
+                <help-info :message="`--exit-node string \r\n   ${t('app.exitNode')}`" />
+              </n-flex>
               <n-select v-if="exitNodeEnabled" v-model:value="exitNode" data-testid="exit-node-select" :options="exitNodeOptions" clearable filterable tag />
               <BooleanOption
                 v-if="exitNodeEnabled && exitNode"
@@ -434,17 +452,23 @@ function downloadStatic() {
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="advertiseTagsEnabled" data-testid="advertise-tags-enable">
-                Advertise Tags
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="advertiseTagsEnabled" data-testid="advertise-tags-enable">
+                  Advertise Tags
+                </n-checkbox>
+                <help-info :message="`--advertise-tags string \r\n   ${t('app.advertiseTags')}`" />
+              </n-flex>
               <n-dynamic-tags v-if="advertiseTagsEnabled" v-model:value="advertiseTags" type="info" @create="handleAdvertiseTagCreate" />
             </n-flex>
           </n-gi>
           <n-gi class="pl-20 md-440">
             <n-flex vertical>
-              <n-checkbox v-model:checked="advertiseRoutesEnabled" data-testid="advertise-routes-enable">
-                Advertise Routes
-              </n-checkbox>
+              <n-flex align="center">
+                <n-checkbox v-model:checked="advertiseRoutesEnabled" data-testid="advertise-routes-enable">
+                  Advertise Routes
+                </n-checkbox>
+                <help-info :message="`--advertise-routes string \r\n   ${t('app.advertiseRoutes')}`" />
+              </n-flex>
               <n-dynamic-tags v-if="advertiseRoutesEnabled" v-model:value="advertiseRoutes" type="info" input-style="width: 150px;" @create="handleAdvertiseRoutesCreate" />
             </n-flex>
           </n-gi>
