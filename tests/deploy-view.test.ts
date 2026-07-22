@@ -117,6 +117,25 @@ const NDynamicTagsStub = defineComponent({
   template: '<div v-bind="$attrs" />',
 })
 
+const NRadioGroupStub = defineComponent({
+  name: 'NRadioGroup',
+  template: '<div><slot /></div>',
+})
+
+const NRadioButtonStub = defineComponent({
+  name: 'NRadioButton',
+  inheritAttrs: false,
+  template: '<button v-bind="$attrs" type="button"><slot /></button>',
+})
+
+const NAlertStub = defineComponent({
+  name: 'NAlert',
+  props: {
+    title: { type: String, default: '' },
+  },
+  template: '<div><div>{{ title }}</div><slot /></div>',
+})
+
 function mountDeployView() {
   return mount(DeployView, {
     global: {
@@ -143,6 +162,12 @@ function mountDeployView() {
         NCode: NCodeStub,
         DynamicTags: NDynamicTagsStub,
         NDynamicTags: NDynamicTagsStub,
+        RadioGroup: NRadioGroupStub,
+        NRadioGroup: NRadioGroupStub,
+        RadioButton: NRadioButtonStub,
+        NRadioButton: NRadioButtonStub,
+        Alert: NAlertStub,
+        NAlert: NAlertStub,
         AuthKeyCascader: NInputStub,
         HelpInfo: true,
         NovaIcon: true,
@@ -200,6 +225,41 @@ describe('常规部署参数', () => {
       isSuccess: true,
       data: { routes: [] },
     })
+  })
+
+  it('切换到个人节点恢复后生成去标签并重新认证的命令', async () => {
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="scenario-recover"]').trigger('click')
+
+    expect(command(wrapper)).toBe('tailscale up --login-server=https://headscale.example.com --advertise-tags= --force-reauth')
+    expect(wrapper.text()).toContain('app.deployRecovery.disconnectWarning')
+    expect(wrapper.text()).toContain('app.deployRecovery.loginAsPersonalUser')
+  })
+
+  it('个人节点恢复默认不重置，勾选后增加重置参数并显示警告', async () => {
+    const wrapper = mountDeployView()
+
+    await wrapper.get('[data-testid="scenario-recover"]').trigger('click')
+    expect(command(wrapper)).not.toContain('--reset')
+
+    await wrapper.get('[data-testid="recovery-reset"]').setValue(true)
+
+    expect(command(wrapper)).toContain('--reset')
+    expect(wrapper.text()).toContain('app.deployRecovery.resetWarning')
+  })
+
+  it('恢复场景的重置状态不会污染常规部署命令', async () => {
+    const wrapper = mountDeployView()
+
+    await setBoolean(wrapper, 'accept-dns', 'false')
+    const deployCommand = command(wrapper)
+
+    await wrapper.get('[data-testid="scenario-recover"]').trigger('click')
+    await wrapper.get('[data-testid="recovery-reset"]').setValue(true)
+    await wrapper.get('[data-testid="scenario-deploy"]').trigger('click')
+
+    expect(command(wrapper)).toBe(deployCommand)
   })
 
   it('将 Accept DNS 显式关闭写入命令', async () => {

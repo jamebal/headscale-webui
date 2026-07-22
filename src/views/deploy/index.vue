@@ -7,10 +7,11 @@ import { local } from '@/utils'
 import { handleTagCreate } from '@/utils/tags'
 import AuthKeyCascader from '@/views/deploy/authKeyCascader.vue'
 import BooleanOption from '@/views/deploy/BooleanOption.vue'
-import { buildTailscaleUpCommand } from '@/views/deploy/command'
+import { buildPersonalNodeRecoveryCommand, buildTailscaleUpCommand } from '@/views/deploy/command'
 
 type NetfilterMode = 'on' | 'nodivert' | 'off'
 type QrFormat = 'auto' | 'ascii' | 'large' | 'small'
+type Scenario = 'deploy' | 'recover'
 
 interface TagOption {
   label: string
@@ -21,6 +22,8 @@ const { copy } = useClipboard()
 const { t } = useI18n()
 
 const serverUrl = ref(local.get('serverUrl') ?? '')
+const scenario = ref<Scenario>('deploy')
+const recoveryReset = ref(false)
 
 const reset = ref<boolean | null>(true)
 const shieldsUp = ref<boolean | null>(null)
@@ -148,7 +151,9 @@ const deployOptions = computed<TailscaleUpOption[]>(() => {
   return result
 })
 
-const code = computed(() => buildTailscaleUpCommand(serverUrl.value, deployOptions.value))
+const code = computed(() => scenario.value === 'recover'
+  ? buildPersonalNodeRecoveryCommand(serverUrl.value, recoveryReset.value)
+  : buildTailscaleUpCommand(serverUrl.value, deployOptions.value))
 
 function isRequiredValueMissing(enabled: boolean, value: string) {
   return enabled && value.trim() === ''
@@ -249,11 +254,28 @@ function downloadStatic() {
       </n-flex>
     </n-flex>
 
+    <n-radio-group v-model:value="scenario">
+      <n-radio-button
+        value="deploy"
+        data-testid="scenario-deploy"
+        @click="scenario = 'deploy'"
+      >
+        {{ t('app.deployScenario.deploy') }}
+      </n-radio-button>
+      <n-radio-button
+        value="recover"
+        data-testid="scenario-recover"
+        @click="scenario = 'recover'"
+      >
+        {{ t('app.deployScenario.recover') }}
+      </n-radio-button>
+    </n-radio-group>
+
     <n-card data-testid="command-card" size="small" hoverable embedded style="cursor: pointer" @click="copyCode">
       <n-code :code="code" language="shell" class="code" word-wrap />
     </n-card>
 
-    <n-card>
+    <n-card v-if="scenario === 'deploy'">
       <n-space vertical>
         <div class="title">
           General:
@@ -446,6 +468,23 @@ function downloadStatic() {
             <BooleanOption v-model="json" data-testid="json" label="JSON Output" />
           </n-gi>
         </n-grid>
+      </n-space>
+    </n-card>
+
+    <n-card v-else>
+      <n-space vertical>
+        <n-alert type="warning" :title="t('app.deployRecovery.disconnectTitle')">
+          {{ t('app.deployRecovery.disconnectWarning') }}
+        </n-alert>
+        <p>{{ t('app.deployRecovery.clearTags') }}</p>
+        <p>{{ t('app.deployRecovery.loginAsPersonalUser') }}</p>
+        <p>{{ t('app.deployRecovery.verifyOwner') }}</p>
+        <n-checkbox v-model:checked="recoveryReset" data-testid="recovery-reset">
+          {{ t('app.deployRecovery.resetOtherSettings') }}
+        </n-checkbox>
+        <n-alert v-if="recoveryReset" type="error">
+          {{ t('app.deployRecovery.resetWarning') }}
+        </n-alert>
       </n-space>
     </n-card>
   </n-space>
